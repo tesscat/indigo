@@ -1,0 +1,3 @@
+func kernel_start() = {
+    while true {};
+};
