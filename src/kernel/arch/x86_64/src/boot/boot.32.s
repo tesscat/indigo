@@ -40,7 +40,7 @@ _start:
   TODO: GDT and Paging before we jump into fancy code
   */
 
-  call kernel_start
+  ; call kernel_start
 
   /* the kernel_start has returned */
   /* clear/disable interrupts, halt, and jump to halt if we escape. */

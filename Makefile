@@ -1,3 +1,6 @@
+PROJECT := indigo
+
+// TODO: redo link-specific flags
 ARCH := x86_64
 TARGET := kernel
 BUILD_DIR := build
@@ -30,8 +33,9 @@ $(BUILD_DIR)/%.32.o: $(SRC_DIR)/%.32.silver
 	mkdir -p $(shell dirname $@)
 	$(SILVERC) $< &> /dev/null
 	mv $(SRC_DIR)/$(*).32.ll $(BUILD_DIR)/$(*).32.ll
-	$(SILVERC_2) -S -target i386-unknown-none-elf $(BUILD_DIR)/$(*).32.ll -o $(BUILD_DIR)/$(*).32.S
-	$(SILVERC_2) $(SILVERC_2_FLAGS) -target i386-unknown-none-elf -c $(BUILD_DIR)/$(*).32.S -o $@
+	$(SILVERC_2) -S -m32 -no-integrated-as $(BUILD_DIR)/$(*).32.ll -o $(BUILD_DIR)/$(*).32.S
+	$(AS) $(AS_FLAGS) $(AS_FLAGS_32) $(BUILD_DIR)/$(*).32.S -o $@
+	# $(SILVERC_2) $(SILVERC_2_FLAGS) -target i386-unknown-none-elf -c $(BUILD_DIR)/$(*).32.S -o $@
 
 $(BUILD_DIR)/%.32.o: $(SRC_DIR)/%.32.s
 	mkdir -p $(shell dirname $@)
