@@ -1,3 +1,11 @@
-func kernel_start() = {
-    while true {};
+#prec 10;
+macro infix =(a: _, b: _) = @AS("store_in a b");
+
+#prec 10;
+macro infix [=](a: _, b: _) = @AS("raw_store_in a b");
+
+func kernel_star() = {
+		vga_buff: &u8 = (0800) as &u8;
+		return;
+    // while true {};
 };
