@@ -36,6 +36,7 @@ _start:
   ; /* make a stack */
   mov $stack_top, %esp
 
+
   ; /*
   ; TODO: GDT and Paging before we jump into fancy code
   ; */
@@ -44,6 +45,8 @@ _start:
 
   ; /* the kernel_start has returned */
   ; /* clear/disable interrupts, halt, and jump to halt if we escape. */
+
+  ret
 
   cli
 1:hlt

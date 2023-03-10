@@ -1,6 +1,6 @@
 PROJECT := indigo
 
-// TODO: redo link-specific flags
+ # TODO: redo link-specific flags
 ARCH := x86_64
 TARGET := kernel
 BUILD_DIR := build
@@ -12,11 +12,12 @@ PREFIX := $(ARCH)-elf
 
 AS := clang
 LD := clang
+CPPC := clang
 SILVERC := x
 SILVERC_2 := clang
 SILVERC_2_FLAGS := -ffreestanding -Wall -Wextra -fno-exceptions -fno-rtti
 
-FLAGS := -ffreestanding -nostdlib -mno-red-zone -mno-sse -mno-sse2 -mno-mmx -mno-avx
+FLAGS := -ffreestanding -nostdlib -mno-red-zone -mno-sse -mno-sse2 -mno-mmx -mno-avx -fno-pie -no-pie -lgcc -O2
 AS_FLAGS := $(FLAGS)
 
 AS_FLAGS_32 := -target i686-elf
@@ -29,14 +30,15 @@ clean:
 
 include $(ARCH_DIR)/make.config
 
+$(BUILD_DIR)/%.32.o: $(SRC_DIR)/%.32.cpp
+	mkdir -p $(shell dirname $@)
+	$(CPPC) $(FLAGS) $(FLAGS_32) -c $^ -o $@
+
 $(BUILD_DIR)/%.32.o: $(SRC_DIR)/%.32.silver
 	mkdir -p $(shell dirname $@)
-	$(SILVERC) $< 1> /dev/null
+	INT_WIDTH=32 $(SILVERC) $< 1> /dev/null
 	mv $(SRC_DIR)/$(*).32.ll $(BUILD_DIR)/$(*).32.ll
 	$(SILVERC_2) -c $(SILVERC_2_FLAGS) $(FLAGS_32) $(BUILD_DIR)/$(*).32.ll -o $@
-	# $(SILVERC_2) -S -m32 -no-integrated-as $(BUILD_DIR)/$(*).32.ll -o $(BUILD_DIR)/$(*).32.S
-	# $(AS) $(AS_FLAGS) $(AS_FLAGS_32) $(BUILD_DIR)/$(*).32.S -o $@
-	# $(SILVERC_2) $(SILVERC_2_FLAGS) -target i386-unknown-none-elf -c $(BUILD_DIR)/$(*).32.S -o $@
 
 $(BUILD_DIR)/%.32.o: $(SRC_DIR)/%.32.s
 	mkdir -p $(shell dirname $@)
