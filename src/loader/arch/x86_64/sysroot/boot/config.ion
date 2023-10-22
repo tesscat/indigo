@@ -1,0 +1,5 @@
+# Indigo Object Notation
+kernel = {
+  path = 'abc/def/g.kernel'
+  args = ['something', 'else']
+}

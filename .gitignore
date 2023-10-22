@@ -1,2 +1,6 @@
 out
 build
+edk2_build
+mkgpt
+*.out
+*.json

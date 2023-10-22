@@ -1,0 +1,6 @@
+[submodule "vendor/gnu-efi"]
+	path = vendor/gnu-efi
+	url = git://git.code.sf.net/p/gnu-efi/code
+[submodule "vendor/posix-uefi"]
+	path = vendor/posix-uefi
+	url = https://gitlab.com/bztsrc/posix-uefi
