@@ -8,7 +8,9 @@ SRC_DIR := src
 # ARCH_DIR := $(SRC_DIR)/$(TARGET)/arch/$(ARCH)/
 COMPONENTS := loader kernel
 
-INC_FLAGS := 
+LIBS_DIR := $(SRC_DIR)/libs
+
+INC_FLAGS := -I$(SRC_DIR)/headers/libs
 
 PREFIX := $(ARCH)-elf
 
@@ -30,7 +32,7 @@ SILVERC := x
 SILVERC_2 := clang
 SILVERC_2_FLAGS := -ffreestanding -Wall -Wextra -fno-exceptions -fno-rtti
 
-FLAGS := $(INC_FLAGS) -ffreestanding -nostdlib -mno-red-zone -mno-sse -mno-sse2 -mno-mmx -mno-avx -fno-pie -no-pie -lgcc -O2 -fno-rtti -Wall -Wextra -fno-exceptions
+FLAGS := $(INC_FLAGS) -ffreestanding -nostdlib -mno-red-zone -mno-sse -mno-sse2 -mno-mmx -mno-avx -fno-pie -no-pie -O2 -fno-rtti -Wall -Wextra -fno-exceptions
 AS_FLAGS := $(FLAGS)
 
 AS_FLAGS_32 :=
@@ -42,9 +44,13 @@ NASM_FLAGS_32 := -felf32
 clean:
 	rm -r $(OUT_DIR) $(BUILD_DIR)
 
-COMPONENT_FILES := $(foreach component, $(COMPONENTS), $(SRC_DIR)/$(component)/arch/$(ARCH)/make.config)
+COMPONENT_FILES := $(foreach component, $(COMPONENTS), $(SRC_DIR)/$(component)/arch/$(ARCH)/$(component).mk)
 
 include $(COMPONENT_FILES)
+
+LIB_FILES := $(foreach lib, $(shell find $(LIBS_DIR)/* -maxdepth 0 -type d | sed "s|$(LIBS_DIR)||g"), $(LIBS_DIR)/$(lib)/$(lib).mk)
+
+include $(LIB_FILES)
 
 
 $(BUILD_DIR)/%.32.o: $(SRC_DIR)/%.32.cpp
