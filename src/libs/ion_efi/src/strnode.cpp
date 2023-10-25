@@ -1,21 +1,9 @@
-#include <ionefi/ionefi.hpp>
+#include <ion_efi/ion_efi.hpp>
 #include <uefi.h>
 
 namespace ion {
-// Node* parseValue(const char* input) {
-//   if (input[0] == '{') {
-//     return new ObjectNode(input);
-//   } else if (input[0] == '[') {
-//     return new ArrayNode(input);
-//   } else if (input[0] == '"') {
-//     return new StrNode(input);
-//   } else {
-//     return nullptr;
-//   }
-// }
-
 #define MALLOC_STR_CHUNK_SIZE 32
-StrNode::StrNode(const char* input) {
+StrNode::StrNode(Input input) {
   // just assume input[0] is '"'
   size_t idx = 1;
   bool escaped = false;
@@ -41,9 +29,16 @@ StrNode::StrNode(const char* input) {
   // trim and add null-terminator
   data = (char*) realloc(data, data_idx + 1);
   data[data_idx] = '\0';
+
+  // add how far we've gone
+  // accounting for the trailing '"'
+  *input.pos += (idx + 1);
 }
 
 char* StrNode::getStr() {return data;}
-//
-// Node* parse(char* input);
+StrNode::~StrNode() {
+  free(data);
+  free(path);
+}
+
 }

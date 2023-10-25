@@ -8,11 +8,11 @@ C_OBJ := $(shell echo " $(_C_OBJ)" | sed "s| $(SRC_DIR)| $(BUILD_DIR)|g")
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	mkdir -p $(shell dirname $@)
-	clang $(CFLAGS) -c $< -o $@
+	clang $(LIBMK_INCL_STMT) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 	mkdir -p $(shell dirname $@)
-	clang++ $(CPPFLAGS) -c $< -o $@
+	clang++ $(LIBMK_INCL_STMT) $(CPPFLAGS) -c $< -o $@
 
 $(OUT_DIR)/$(LIB_NAME).a: $(C_OBJ) $(CPP_OBJ)
 	mkdir -p $(shell dirname $@)
