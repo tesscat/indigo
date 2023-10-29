@@ -1,44 +1,45 @@
+#include <vec_efi/vec_efi.hpp>
 #include <ion_efi/ion_efi.hpp>
 #include <uefi.h>
 
 namespace ion {
-#define MALLOC_STR_CHUNK_SIZE 32
 StrNode::StrNode(Input input) {
   // just assume input[0] is '"'
-  size_t idx = 1;
+  *input.pos += 1;
+  indigo::Vec<char> str;
   bool escaped = false;
-  size_t size = MALLOC_STR_CHUNK_SIZE;
-  size_t data_idx = 0;
-  data = (char*) malloc(size);
-  while (escaped || input[idx] != '"') {
-    if (escaped || input[idx] != '\\') {
-      data[data_idx] = input[idx];
-      data_idx++;
-      if (data_idx == size) {
-        // exceeded current buffer, reallocate it
-        size += MALLOC_STR_CHUNK_SIZE;
-        data = (char*) realloc(data, size);
-      }
+  while ((escaped || input[0] != '"') && input[0] != '\0') {
+    if (escaped || input[0] != '\\') {
+      str.Append(input[0]);
       escaped = false;
     } else {
       escaped = true;
     }
-    idx++;
+    *input.pos += 1;
+  }
+
+  if (input[0] != '"') {
+    input.is_err = true;
+    input.error(*input.pos, "Expected '\"' to finish string");
+  } else {
+    *input.pos += 1;
   }
 
   // trim and add null-terminator
-  data = (char*) realloc(data, data_idx + 1);
-  data[data_idx] = '\0';
-
-  // add how far we've gone
-  // accounting for the trailing '"'
-  *input.pos += (idx + 1);
+  str.Append('\0');
+  str.Trim();
+  str.takeMyData = true;
+  data = str.data;
 }
 
 char* StrNode::getStr() {return data;}
 StrNode::~StrNode() {
   free(data);
-  free(path);
+}
+
+Node* StrNode::get(indigo::Vec<const char*>* path, size_t offs) {
+  if (path->len - offs != 0) return nullptr;
+  return this;
 }
 
 }

@@ -1,6 +1,8 @@
 #include <uefi.h>
 #include <vec_efi/vec_efi.hpp>
 
+/*
+
 namespace indigo {
 template <typename T>
 Vec<T>::Vec() {
@@ -40,3 +42,4 @@ void Vec<T>::Append(T value) {
 }
 
 }
+*/

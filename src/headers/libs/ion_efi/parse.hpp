@@ -9,6 +9,8 @@ namespace ion {
  * @param input the string to start from, which has ->pos changed
  */
 void skipWhitespace(Input input);
+char* takeName(Input input);
+Node* parseValue(Input input);
 }
 
 #endif // !LIBS_IONEFI_PARSE_HPP

@@ -1,4 +1,4 @@
-LIB_NAME := arrefi
+LIB_NAME := vec_efi
 CFLAGS := $(EFI_C_FLAGS)
 CPPFLAGS := $(EFI_CPP_FLAGS) -I$(POSIX_EFI_PATH)
 

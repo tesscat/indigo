@@ -19,7 +19,7 @@ LOADER_C_SRC_FILES := $(shell find $(LOADER_ARCH_DIR) -name "*.c")
 _LOADER_C_OBJ := $(LOADER_C_SRC_FILES:.c=.o)
 LOADER_C_OBJ := $(shell echo " $(_LOADER_C_OBJ)" | sed "s| $(SRC_DIR)| $(BUILD_DIR)|g")
 
-LOADER_DEPS := $(OUT_DIR)/ionefi.a
+LOADER_DEPS := $(OUT_DIR)/ion_efi.a
 
 LOADER_OBJ := $(LOADER_CPP_OBJ) $(LOADER_C_OBJ) $(LOADER_DEPS)
 
