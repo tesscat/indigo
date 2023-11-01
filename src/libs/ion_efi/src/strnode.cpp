@@ -1,3 +1,5 @@
+#include <stdint.h>
+#define _STDINT_H
 #include <vec_efi/vec_efi.hpp>
 #include <ion_efi/ion_efi.hpp>
 #include <uefi.h>

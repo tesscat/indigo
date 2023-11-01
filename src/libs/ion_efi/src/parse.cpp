@@ -1,3 +1,5 @@
+#include <stdint.h>
+#define _STDINT_H
 #include <ion_efi/ion_efi.hpp>
 #include <uefi.h>
 #include <ion_efi/parse.hpp>

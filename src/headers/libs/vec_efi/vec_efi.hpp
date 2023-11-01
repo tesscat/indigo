@@ -5,6 +5,9 @@
 #define VEC_ALLOC_BLOCK_SIZE 16
 #endif
 
+#include <stdint.h>
+#define _STDINT_H
+
 namespace indigo {
 template <typename T>
 class Vec {

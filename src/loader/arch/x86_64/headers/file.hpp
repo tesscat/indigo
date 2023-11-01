@@ -9,4 +9,10 @@
  */
 char* readFile(const char* name);
 
+struct BinaryFile {
+  size_t len;
+  void* data;
+};
+
+BinaryFile readBinaryFile(const char* name);
 #endif

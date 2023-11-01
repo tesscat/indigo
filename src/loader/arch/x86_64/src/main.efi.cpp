@@ -1,4 +1,7 @@
-#include "vec_efi/vec_efi.hpp"
+#include <kernel.hpp>
+#include <stdint.h>
+#define _STDINT_H
+#include <vec_efi/vec_efi.hpp>
 #include <uefi.h>
 #include <file.hpp>
 #include <ion_efi/ion_efi.hpp>
@@ -10,28 +13,64 @@ void error(size_t loc, const char* message) {
 
 extern "C" int main(int argc, char** argv) {
   char* data = readFile("root.ion");
-  if (data != NULL) {
-    printf(data);
-    ion::Input input;
-    size_t pos = 0;
-    input.pos = &pos;
-    input.str = data;
-    // input.error = error;
-    ion::RootNode* root = ion::parse(input);
-    size_t len = root->getLen();
-    indigo::Vec<const char*> pathpath;
-    pathpath.Append("kernel");
-    pathpath.Append("path");
-    ion::Node* kpath = root->getFrom(&pathpath);
-    if (kpath) {
-      if (kpath->getType() == ion::NodeType::StrNode) {
-        class ion::StrNode* snode = static_cast<class ion::StrNode*>(kpath);
-        printf(snode->getStr());
-      } else {printf("invalid non-string node type at kernel.path");}
-    } else {printf("no node at kernel.path");}
+  if (data == NULL) {
+    printf("Unable to load root.ion");
+    while(1);
   }
 
-  
+  ion::Input input;
+  size_t pos = 0;
+  input.pos = &pos;
+  input.str = data;
+
+  ion::RootNode* root = ion::parse(input);
+
+  size_t len = root->getLen();
+
+  indigo::Vec<const char*> pathpath;
+  pathpath.Append("kernel");
+  pathpath.Append("path");
+  ion::Node* kpath = root->getFrom(&pathpath);
+
+  if (!kpath) {
+    printf("no node at kernel.path");
+    while(1);
+  }
+  if (kpath->getType() != ion::NodeType::StrNode) {
+    printf("invalid non-string node type at kernel.path");
+    while(1);
+  }
+
+  class ion::StrNode* snode = static_cast<class ion::StrNode*>(kpath);
+  const char* path = snode->getStr();
+  Kernel kernel(path, root);
+
+  indigo::Vec<const char*> argpath;
+  argpath.Append("kernel");
+  argpath.Append("args");
+  ion::Node* argnode = root->getFrom(&argpath);
+  if (argnode) {
+    if (argnode->getType() != ion::NodeType::ArrayNode) {
+      printf("Invalid type for kernel.args");
+      while(1);
+    }
+    indigo::Vec<char*> args;
+    class ion::ArrayNode* arrnode = static_cast<class ion::ArrayNode*>(argnode);
+    size_t len = arrnode->getLen();
+    for (int i = 0; i < len; i++) {
+      ion::Node* node = arrnode->getArr()[i];
+      if (node->getType() != ion::NodeType::StrNode) {
+        printf("Argument at %i is not a string\n", i);
+        while(1);
+      }
+      args.Append(static_cast<class ion::StrNode*>(node)->getStr());
+    }
+
+    args.takeMyData = true;
+    kernel.Run(len, args.data);
+  }
+
+  kernel.Run(0, nullptr);
 
   while (1);
   return 0;

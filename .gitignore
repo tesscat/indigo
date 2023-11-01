@@ -1,5 +1,6 @@
 out
 build
+scratch
 .cache
 *.out
 *.json

@@ -14,15 +14,15 @@ INC_FLAGS := -I$(SRC_DIR)/headers/libs
 
 PREFIX := $(ARCH)-elf
 
-ARCH_32 := i686
-PREFIX_32 := $(ARCH_32)-elf
+# ARCH_32 := i686
+# PREFIX_32 := $(ARCH_32)-elf
 
-AS := $(PREFIX)-g++
-LD := $(PREFIX_32)-g++
-CPPC := $(PREFIX)-g++
-AS_32 := $(PREFIX_32)-g++
-LD_32 := $(PREFIX_32)-g++
-CPPC_32 := $(PREFIX_32)-g++
+# AS := $(PREFIX)-g++
+LD := ld.lld
+CPPC := clang++
+# AS_32 := $(PREFIX_32)-g++
+# LD_32 := $(PREFIX_32)-g++
+# CPPC_32 := $(PREFIX_32)-g++
 
 NASM_32 := nasm
 # AS := clang++
@@ -32,8 +32,10 @@ SILVERC := x
 SILVERC_2 := clang
 SILVERC_2_FLAGS := -ffreestanding -Wall -Wextra -fno-exceptions -fno-rtti
 
-FLAGS := $(INC_FLAGS) -ffreestanding -nostdlib -mno-red-zone -mno-sse -mno-sse2 -mno-mmx -mno-avx -fno-pie -no-pie -O2 -fno-rtti -Wall -Wextra -fno-exceptions
-AS_FLAGS := $(FLAGS)
+BASE_FLAGS := $(INC_FLAGS) -ffreestanding -nostdlib -mno-red-zone -mno-sse -mno-sse2 -mno-mmx -mno-avx -fno-pie -no-pie -O2 -fno-rtti -Wall -Wextra -fno-exceptions
+AS_FLAGS := $(BASE_FLAGS)
+
+LD_FLAGS := -nostdlib --no-pie
 
 AS_FLAGS_32 :=
 FLAGS_32 :=
@@ -70,14 +72,14 @@ $(BUILD_DIR)/%.32.o: $(SRC_DIR)/%.32.s
 $(BUILD_DIR)/%.32.o: $(SRC_DIR)/%.32.S
 	mkdir -p $(shell dirname $@)
 	$(NASM_32) $(NASM_FLAGS) $(NASM_FLAGS_32) $< -o $@
-
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.silver
-	mkdir -p $(shell dirname $@)
-	$(SILVERC) $< &> /dev/null
-	mv $(SRC_DIR)/$(*).ll $(BUILD_DIR)/$(*).ll
-	$(SILVERC_2) -S $(BUILD_DIR)/$(*).ll -o $(BUILD_DIR)/$(*).S
-	$(SILVERC_2) $(SILVERC_2_FLAGS) -c $(BUILD_DIR)/$(*).S -o $@
-
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.s
-	mkdir -p $(shell dirname $@)
-	$(AS) $(AS_FLAGS) -c $< -o $@
+#
+# $(BUILD_DIR)/%.o: $(SRC_DIR)/%.silver
+# 	mkdir -p $(shell dirname $@)
+# 	$(SILVERC) $< &> /dev/null
+# 	mv $(SRC_DIR)/$(*).ll $(BUILD_DIR)/$(*).ll
+# 	$(SILVERC_2) -S $(BUILD_DIR)/$(*).ll -o $(BUILD_DIR)/$(*).S
+# 	$(SILVERC_2) $(SILVERC_2_FLAGS) -c $(BUILD_DIR)/$(*).S -o $@
+#
+# $(BUILD_DIR)/%.o: $(SRC_DIR)/%.s
+# 	mkdir -p $(shell dirname $@)
+# 	$(AS) $(AS_FLAGS) -c $< -o $@

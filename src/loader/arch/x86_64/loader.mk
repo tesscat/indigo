@@ -4,7 +4,7 @@ LOADER_SYSROOT_NAME := sysroot
 
 POSIX_EFI_PATH := vendor/posix-uefi/uefi
 
-LOADER_INCL_DIRS := $(LOADER_ARCH_DIR)/headers $(POSIX_EFI_PATH)
+LOADER_INCL_DIRS := $(LOADER_ARCH_DIR)/headers $(POSIX_EFI_PATH) $(SRC_DIR)/headers/common
 LOADER_INCL_STMT := $(foreach path, $(LOADER_INCL_DIRS), -I$(path)) $(INC_FLAGS)
 
 EFI_C_FLAGS := -fshort-wchar -mno-red-zone -fno-strict-aliasing -ffreestanding -fno-stack-protector -fno-stack-check -D__x86_64__ -DHAVE_USE_MS_ABI -mno-red-zone --target=x86_64-pc-win32-coff -Wno-builtin-requires-header -Wno-incompatible-library-redeclaration -Wno-long-long $(LOADER_INCL_STMT)
@@ -46,11 +46,14 @@ $(BUILD_DIR)/$(LOADER_SYSROOT_NAME)/: $(OUT_DIR)/$(LOADER_NAME).efi
 	mkdir -p $@/EFI/BOOT
 	cp -r $< $@/EFI/BOOT/BOOTX64.EFI
 
+$(OUT_DIR)/$(LOADER_SYSROOT_NAME)/: $(BUILD_DIR)/$(LOADER_SYSROOT_NAME)/ $(BUILD_DIR)/$(LOADER_SYSROOT_NAME)/kernel
+	cp -r $< $@
+
 $(OUT_DIR)/$(LOADER_NAME).efi: $(BUILD_DIR)/$(LOADER_NAME).efi
 	mkdir -p $(shell dirname $@)
 	cp $< $@
 
-$(BUILD_DIR)/$(LOADER_NAME).img: $(BUILD_DIR)/$(LOADER_SYSROOT_NAME)/
+$(BUILD_DIR)/$(LOADER_NAME).img: $(OUT_DIR)/$(LOADER_SYSROOT_NAME)/
 	# TODO: make these numbers better
 	dd if=/dev/zero of=$@ bs=1k count=1440
 	mformat -i $@ -f 1440 ::

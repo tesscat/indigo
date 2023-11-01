@@ -14,31 +14,36 @@ _KERNEL_CPP_OBJ := $(KERNEL_CPP_SRC_FILES:.cpp=.o)
 KERNEL_CPP_OBJ := $(shell echo " $(_KERNEL_CPP_OBJ)" | sed "s| $(SRC_DIR)| $(BUILD_DIR)|g")
 
 
-
-INC_FLAGS := $(INC_FLAGS) -I$(KERNEL_ARCH_DIR)/headers -I$(SRC_DIR)/$(KERNEL_NAME)/common/headers
+INC_FLAGS := $(INC_FLAGS) -I$(KERNEL_ARCH_DIR)/headers -I$(SRC_DIR)/headers/common 
 
 MKISO := grub-mkrescue
 
-KERNEL_OBJS := $(KERNEL_SILVER_OBJ) $(KERNEL_AS_OBJ) $(KERNEL_CPP_OBJ)
-
-LINK_SCRIPT := $(KERNEL_ARCH_DIR)link.ld
+KERNEL_OBJS := $(KERNEL_SILVER_OBJ) $(KERNEL_AS_OBJ) $(KERNEL_CPP_OBJ) $(BUILD_DIR)/$(KERNEL_NAME)/arch/$(ARCH)/font.o
 
 .PHONY: project run listobjs
 
 listobjs:
 	echo $(KERNEL_OBJS)
 
-# run: $(OUT_DIR)/$(PROJECT).iso 
-# 	qemu-system-$(ARCH) -accel kvm -serial stdio -cdrom $(OUT_DIR)/$(PROJECT).iso
-
+$(BUILD_DIR)/$(KERNEL_NAME)/%.o: $(SRC_DIR)/$(KERNEL_NAME)/%.cpp
+	mkdir -p $(shell dirname $@)
+	$(CPPC) $(BASE_FLAGS) -fno-stack-protector -fno-stack-check $(INC_FLAGS) -c $< -o $@
 
 $(OUT_DIR)/$(KERNEL_NAME): $(KERNEL_OBJS)
 	mkdir -p $(shell dirname $@)
-	echo $(AS_SRC_FILES) $(KERNEL_OBJS)
-	$(LD) -T $(LINK_SCRIPT) $(FLAGS) $(FLAGS_32) $^ -o $@
+	$(LD) $(LD_FLAGS) -z max-page-size=0x1000 -Ttext=0x01000000 $^ -o $@
 
-$(OUT_DIR)/$(PROJECT).iso: $(OUT_DIR)/$(KERNEL_NAME)
-	mkdir -p $(BUILD_DIR)/isodir/boot/grub
-	cp $(KERNEL_ARCH_DIR)/grub.cfg $(BUILD_DIR)/isodir/boot/grub/
-	cp $(OUT_DIR)/$(KERNEL_NAME) $(BUILD_DIR)/isodir/boot/
-	$(MKISO) $(BUILD_DIR)/isodir -o $@
+$(BUILD_DIR)/$(LOADER_SYSROOT_NAME)/kernel: $(OUT_DIR)/$(KERNEL_NAME)
+	cp $< $@
+
+$(BUILD_DIR)/$(KERNEL_NAME)/%.psfu: $(SRC_DIR)/$(KERNEL_NAME)/%.psfu.gz
+	mkdir -p $(shell dirname $@)
+	cat $< | gunzip - > $@
+
+$(BUILD_DIR)/$(KERNEL_NAME)/%/font.o: $(BUILD_DIR)/$(KERNEL_NAME)/%/font.psfu
+	mkdir -p $(shell dirname $@)
+	$(let prevdir, $(shell pwd), \
+		cd $(shell dirname $@); \
+		objcopy -O elf64-x86-64 -B i386 -I binary font.psfu font.o; \
+		cd $(prevdir); \
+	)
