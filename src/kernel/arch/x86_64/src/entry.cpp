@@ -1,27 +1,29 @@
-#include "graphics/psf.hpp"
+#include <graphics/psf.hpp>
+#include <graphics/screen.hpp>
 #include <loader/kernel_args.hpp>
 
 KernelArgs* kargs;
-
-inline void plotPixel(unsigned int x, unsigned int y, unsigned int pixel) {
-  kargs->framebuffer[x + y*kargs->fbPitch] = pixel;
-}
 
 /**
  * Example "kernel"
  */
 extern "C" void _start(KernelArgs* args) {
   kargs = args;
+  graphics::psf::initPSF();
+  graphics::screen::initScreen();
   for (unsigned int x = 0; x < kargs->fbWidth; x++) {
     for (unsigned int y = 0; y < kargs->fbHeight; y++) {
-      unsigned int pixel = ((255*x)/kargs->fbWidth & 0xFF) | ((((255*y)/kargs->fbHeight) << 8) & 0xFF00) | 0x00FF0000;
-      plotPixel(x, y, pixel);
+      unsigned int pixel = ((255*x)/kargs->fbWidth & 0xFF) | 0xFF | ((((255*y)/kargs->fbHeight) << 8) & 0xFF00) | 0x00FF0000;
+      graphics::screen::plotPixel(x, y, pixel);
     }
   }
 
-  graphics::psf::initPSF();
+  for (uint64_t i = 0; i < 50; i++) {
+    graphics::psf::putchar('A' + i, 0x00FFFFFF, 0x00000000);
+    graphics::psf::putchar('\n', 200, 0);
+  }
 
-  graphics::psf::putcharExactly('~', 20, 20, 0x00FFFFFF, 0x00000000);
+  // graphics::psf::putcharExactly('~', 20, 207, 0x00FFFFFF, 0x00000000);
 }
 //
 // inline void plotPixel(uint32_t x, uint32_t y, uint32_t* fb, uint32_t pitch, uint32_t pixel) {

@@ -22,7 +22,11 @@ struct PSFFont {
   uint32_t width;
 };
 bool initPSF();
-void putcharExactly(uint16_t c, uint64_t x, uint64_t y, uint32_t fg, uint32_t bg);
+void putchar(uint8_t c, uint64_t cx, uint64_t cy, uint32_t fg, uint32_t bg);
+void putcharExactly(uint8_t c, uint64_t x, uint64_t y, uint32_t fg, uint32_t bg);
+void putchar(uint8_t c, uint32_t fg, uint32_t bg);
+void print(const char* str, uint32_t fg, uint32_t bg);
+void print(const char* str, uint64_t cx_, uint64_t cy_, uint32_t fg, uint32_t bg);
 
 }
 

@@ -55,23 +55,23 @@ LIB_FILES := $(foreach lib, $(shell find $(LIBS_DIR)/* -maxdepth 0 -type d | sed
 include $(LIB_FILES)
 
 
-$(BUILD_DIR)/%.32.o: $(SRC_DIR)/%.32.cpp
-	mkdir -p $(shell dirname $@)
-	$(CPPC_32) $(FLAGS) $(FLAGS_32) -c $^ -o $@
-
-$(BUILD_DIR)/%.32.o: $(SRC_DIR)/%.32.silver
-	mkdir -p $(shell dirname $@)
-	INT_WIDTH=32 $(SILVERC) $< &> /dev/null
-	mv $(SRC_DIR)/$(*).32.ll $(BUILD_DIR)/$(*).32.ll
-	$(SILVERC_2) -c $(SILVERC_2_FLAGS) $(FLAGS_32) $(BUILD_DIR)/$(*).32.ll -o $@
-
-$(BUILD_DIR)/%.32.o: $(SRC_DIR)/%.32.s
-	mkdir -p $(shell dirname $@)
-	$(AS_32) $(AS_FLAGS) $(AS_FLAGS_32) -c $< -o $@
-
-$(BUILD_DIR)/%.32.o: $(SRC_DIR)/%.32.S
-	mkdir -p $(shell dirname $@)
-	$(NASM_32) $(NASM_FLAGS) $(NASM_FLAGS_32) $< -o $@
+# $(BUILD_DIR)/%.32.o: $(SRC_DIR)/%.32.cpp
+# 	mkdir -p $(shell dirname $@)
+# 	$(CPPC_32) $(FLAGS) $(FLAGS_32) -c $^ -o $@
+#
+# $(BUILD_DIR)/%.32.o: $(SRC_DIR)/%.32.silver
+# 	mkdir -p $(shell dirname $@)
+# 	INT_WIDTH=32 $(SILVERC) $< &> /dev/null
+# 	mv $(SRC_DIR)/$(*).32.ll $(BUILD_DIR)/$(*).32.ll
+# 	$(SILVERC_2) -c $(SILVERC_2_FLAGS) $(FLAGS_32) $(BUILD_DIR)/$(*).32.ll -o $@
+#
+# $(BUILD_DIR)/%.32.o: $(SRC_DIR)/%.32.s
+# 	mkdir -p $(shell dirname $@)
+# 	$(AS_32) $(AS_FLAGS) $(AS_FLAGS_32) -c $< -o $@
+#
+# $(BUILD_DIR)/%.32.o: $(SRC_DIR)/%.32.S
+# 	mkdir -p $(shell dirname $@)
+# 	$(NASM_32) $(NASM_FLAGS) $(NASM_FLAGS_32) $< -o $@
 #
 # $(BUILD_DIR)/%.o: $(SRC_DIR)/%.silver
 # 	mkdir -p $(shell dirname $@)

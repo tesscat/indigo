@@ -1,0 +1,78 @@
+#include "graphics/psf.hpp"
+#include <graphics/screen.hpp>
+#include <libmem/mem.hpp>
+
+namespace graphics::screen {
+uint32_t* backBuffer;
+
+// TODO: rewrite when we have kernel malloc()
+void initScreen() {
+  // pick a location for the backBuffer
+  // we know that EFI is kind of wasteful, and the kernel itself starts at 32MB
+  // we need width*height*sizeof(uint32_t)
+  // that doesn't clash with framebuffer, or kargs, or kernel (so less than 32MB)
+  // we use width not pitch because we'll copy row-by-row anyway
+  // lets try 0x0 I guess?
+  // uint64_t startPtr = 0x0;
+
+  uint64_t startKargs = (uint64_t) kargs;
+  uint64_t endKargs = startKargs + kargs->totalSize;
+
+  uint64_t startFb = (uint64_t) kargs->framebuffer;
+  uint64_t endFb = startFb + (sizeof(uint32_t) * kargs->fbPitch * kargs->fbHeight);
+
+  uint64_t candidates[] = {endFb + 8, endKargs + 8};
+  uint64_t i = 0;
+  bool works = true;
+
+  for (i = 0; i < 3; i++) {
+    uint64_t startPtr = candidates[i];
+    uint64_t endPtr = startPtr + (sizeof(uint32_t) * kargs->fbWidth * kargs->fbHeight);
+    works = true;
+    // does it clash with Kargs?
+    if ((startPtr >= startKargs && startPtr <= endKargs) || (endPtr >= startKargs && endPtr <= endKargs))
+      // borked
+      works = false;
+    // does it clash with fb?
+    if ((startPtr >= startFb && startPtr <= endFb) || (endPtr >= startFb && endPtr <= endFb))
+      works = false;
+
+    if (works) break;
+  }
+
+  if (works) {
+    backBuffer = (uint32_t*) candidates[i];
+    // graphics::psf::putchar('1' + i, 10, 10, 0x00FFFFFF, 0x00000000);
+    // while(1);
+  } else {
+    // better hope it doesn't scroll
+    graphics::psf::putchar('X', 10, 10, 0x00FFFFFF, 0x00000000);
+    while(1);
+  }
+}
+
+void plotPixel(unsigned int x, unsigned int y, unsigned int pixel) {
+  kargs->framebuffer[x + y*kargs->fbPitch] = pixel;
+  backBuffer[x + y*kargs->fbWidth] = pixel;
+}
+
+void scrollDown(unsigned int lines, uint32_t fill) {
+  if (lines > kargs->fbHeight)
+    lines = kargs->fbHeight;
+  // copy n + lines-th line to framebuffer
+  for (unsigned int i = 0; i < (kargs->fbHeight - lines); i++) {
+    for (unsigned int x = 0; x < kargs->fbWidth; x++) {
+      plotPixel(x, i, backBuffer[x + (i+lines)*kargs->fbWidth]);
+    }
+    // memcpy(&kargs->framebuffer[kargs->fbPitch*(i)], &backBuffer[(i+lines)*kargs->fbWidth], kargs->fbWidth*sizeof(unsigned int));
+    // update backBuffer accordingly
+    // memcpy(&backBuffer[kargs->fbWidth*(i)], &backBuffer[(i+lines)*kargs->fbWidth], kargs->fbWidth*sizeof(unsigned int));
+  }
+  // fill the rest
+  for (unsigned int i = kargs->fbHeight - lines; i < kargs->fbHeight; i++) {
+    for (unsigned int x = 0; x < kargs->fbWidth; x++) {
+      plotPixel(x, i, fill);
+    }
+  }
+}
+}
