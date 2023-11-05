@@ -52,7 +52,7 @@ void print(const char* str, uint64_t cx_, uint64_t cy_, uint32_t fg, uint32_t bg
 }
 
 void putchar(uint8_t c, uint32_t fg, uint32_t bg) {
-if (c == '\n') {
+  if (c == '\n') {
     cx = 0;
     cy++;
   } else {

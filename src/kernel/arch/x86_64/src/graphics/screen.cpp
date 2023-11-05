@@ -61,12 +61,12 @@ void scrollDown(unsigned int lines, uint32_t fill) {
     lines = kargs->fbHeight;
   // copy n + lines-th line to framebuffer
   for (unsigned int i = 0; i < (kargs->fbHeight - lines); i++) {
-    for (unsigned int x = 0; x < kargs->fbWidth; x++) {
-      plotPixel(x, i, backBuffer[x + (i+lines)*kargs->fbWidth]);
-    }
-    // memcpy(&kargs->framebuffer[kargs->fbPitch*(i)], &backBuffer[(i+lines)*kargs->fbWidth], kargs->fbWidth*sizeof(unsigned int));
+    // for (unsigned int x = 0; x < kargs->fbWidth; x++) {
+      // plotPixel(x, i, backBuffer[x + (i+lines)*kargs->fbWidth]);
+    // }
+    memcpy(&kargs->framebuffer[kargs->fbPitch*(i)], &backBuffer[(i+lines)*kargs->fbWidth], kargs->fbWidth*sizeof(unsigned int));
     // update backBuffer accordingly
-    // memcpy(&backBuffer[kargs->fbWidth*(i)], &backBuffer[(i+lines)*kargs->fbWidth], kargs->fbWidth*sizeof(unsigned int));
+    memcpy(&backBuffer[kargs->fbWidth*(i)], &backBuffer[(i+lines)*kargs->fbWidth], kargs->fbWidth*sizeof(unsigned int));
   }
   // fill the rest
   for (unsigned int i = kargs->fbHeight - lines; i < kargs->fbHeight; i++) {

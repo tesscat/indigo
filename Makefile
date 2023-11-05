@@ -1,3 +1,5 @@
+DEBUG := 1
+
 PROJECT := indigo
 
  # TODO: redo link-specific flags
@@ -19,7 +21,11 @@ PREFIX := $(ARCH)-elf
 
 # AS := $(PREFIX)-g++
 LD := ld.lld
-CPPC := clang++
+# ifdef $(DEBUG)
+CPPC := clang++ -g
+# else
+# CPPC := clang++
+# endif
 # AS_32 := $(PREFIX_32)-g++
 # LD_32 := $(PREFIX_32)-g++
 # CPPC_32 := $(PREFIX_32)-g++

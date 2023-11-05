@@ -4,9 +4,6 @@
 
 KernelArgs* kargs;
 
-/**
- * Example "kernel"
- */
 extern "C" void _start(KernelArgs* args) {
   kargs = args;
   graphics::psf::initPSF();
@@ -18,41 +15,15 @@ extern "C" void _start(KernelArgs* args) {
     }
   }
 
-  for (uint64_t i = 0; i < 50; i++) {
-    graphics::psf::putchar('A' + i, 0x00FFFFFF, 0x00000000);
-    graphics::psf::putchar('\n', 200, 0);
+
+  for (int i = 0; i < 50; i++) {
+    // graphics::psf::putchar('A' + i, 0x00FFFFFF, 0x00000000);
+    // graphics::psf::putchar('f', 200, 0);
+    graphics::psf::print("abcdefg", 0x00FFFFFF, 0x00);
   }
 
-  // graphics::psf::putcharExactly('~', 20, 207, 0x00FFFFFF, 0x00000000);
+    // graphics::psf::putchar('f', 200, 0);
+  // graphics::psf::print("Lorem ipsum dolor sit amet, officia excepteur ex fugiat reprehenderit enim labore culpa sint ad nisi Lorem pariatur mollit ex esse exercitation amet. Nisi anim cupidatat excepteur officia. Reprehenderit nostrud nostrud ipsum Lorem est aliquip amet voluptate voluptate dolor minim nulla est proident. Nostrud officia pariatur ut officia. Sit irure elit esse ea nulla sunt ex occaecat reprehenderit commodo officia dolor Lorem duis laboris cupidatat officia voluptate. Culpa proident adipisicing id nulla nisi laboris ex in Lorem sunt duis officia eiusmod. Aliqua reprehenderit commodo ex non excepteur duis sunt velit enim. Voluptate laboris sint cupidatat ullamco ut ea consectetur et est culpa et culpa duis.", 0x00FFFFFF, 0x00);
+  __asm__ __volatile__ ("hlt");
+  while(1);
 }
-//
-// inline void plotPixel(uint32_t x, uint32_t y, uint32_t* fb, uint32_t pitch, uint32_t pixel) {
-//   fb[(y*pitch + x)] = pixel;
-// }
-//
-// extern "C" void _start(KernelArgs* args) {
-//   for (uint32_t i = 0; i < 7; i++) {
-//     for (uint32_t j = 0; j < 10; j++)
-//       plotPixel(j, i, args->framebuffer, args->fbPitch, 0xFF);
-//   }
-//   // args->framebuffer[6*args->fbPitch + 3] = 0xFFFFFFFF;
-//     // plotPixel(2, 2, args->framebuffer, args->fbPitch, 0xFFFFFFFF);
-//   // plotPixel(0, 0, args->framebuffer, args->fbPitch, 0xffffffff);
-//   // for (size_t y = 0; y < args->fbHeight; y++) {
-//     // for (size_t x = 0; x < args->fbWidth; x++) {
-//       // uint8_t r = (y*255)/args->fbHeight;
-//       // uint8_t g = (x*255)/args->fbWidth;
-//       // uint32_t pixel = (((uint32_t)r) << 0 & 0x000000FF) | (((uint32_t)g) << 16 & 0x0000FF00) | 0x00FF0000;
-//       // uint32_t pixel = 0x00FFFFFFFF;
-//       // plotPixel(x, y, args->framebuffer, args->fbPitch, pixel);
-//     // }
-//     // while(true) {};
-//   // }
-//   // if (args->fbWidth != 1280 || args->fbPitch != 1280 || args->fbHeight != 800 || (uint64_t)args->framebuffer != 0x80000000)
-//     // while(1);
-//   // args->framebuffer = (uint32_t*)0x80000000;
-//   // for (uint64_t i = 0; i < (args->fbPitch * args->fbHeight); i++) {
-//     // args->framebuffer[i] = 0xFFFFFFFF;
-//   // }
-//   while(1);
-// }
