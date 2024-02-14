@@ -24,8 +24,8 @@ struct PSFFont {
 bool initPSF();
 void putchar(uint8_t c, uint64_t cx, uint64_t cy, uint32_t fg, uint32_t bg);
 void putcharExactly(uint8_t c, uint64_t x, uint64_t y, uint32_t fg, uint32_t bg);
-void putchar(uint8_t c, uint32_t fg, uint32_t bg);
-void print(const char* str, uint32_t fg, uint32_t bg);
+void putchar(uint8_t c, uint32_t fg = 0x00FFFFFF, uint32_t bg = 0x00);
+void print(const char* str, uint32_t fg = 0x00FFFFFF, uint32_t bg = 0x00);
 void print(const char* str, uint64_t cx_, uint64_t cy_, uint32_t fg, uint32_t bg);
 
 }

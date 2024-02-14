@@ -34,6 +34,7 @@ $(OUT_DIR)/$(KERNEL_NAME): $(KERNEL_OBJS)
 	$(LD) $(LD_FLAGS) -z max-page-size=0x1000 -Ttext=0x01000000 $^ -o $@
 
 $(BUILD_DIR)/$(LOADER_SYSROOT_NAME)/kernel: $(OUT_DIR)/$(KERNEL_NAME)
+	mkdir -p $(shell dirname $@)
 	cp $< $@
 
 $(BUILD_DIR)/$(KERNEL_NAME)/%.psfu: $(SRC_DIR)/$(KERNEL_NAME)/%.psfu.gz
@@ -43,6 +44,7 @@ $(BUILD_DIR)/$(KERNEL_NAME)/%.psfu: $(SRC_DIR)/$(KERNEL_NAME)/%.psfu.gz
 $(BUILD_DIR)/$(KERNEL_NAME)/%/font.o: $(BUILD_DIR)/$(KERNEL_NAME)/%/font.psfu
 	mkdir -p $(shell dirname $@)
 	$(let prevdir, $(shell pwd), \
+        mkdir -p $(shell dirname $@); \
 		cd $(shell dirname $@); \
 		objcopy -O elf64-x86-64 -B i386 -I binary font.psfu font.o; \
 		cd $(prevdir); \
