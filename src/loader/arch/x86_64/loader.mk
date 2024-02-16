@@ -67,7 +67,7 @@ $(OUT_DIR)/$(PROJECT).bin: $(BUILD_DIR)/$(PROJECT).bin
 
 # ifdef $(DEBUG)
 run: $(OUT_DIR)/$(PROJECT).bin
-	qemu-system-$(ARCH) -s -S -bios /usr/share/edk2-ovmf/x64/OVMF.fd -net none -hda $^ &
+	qemu-system-$(ARCH) -m 2G -s -S -bios /usr/share/edk2-ovmf/x64/OVMF.fd -net none -hda $^ &
 	sleep 0.5
 	lldb $(OUT_DIR)/kernel -o 'gdb-remote localhost:1234'
 # else

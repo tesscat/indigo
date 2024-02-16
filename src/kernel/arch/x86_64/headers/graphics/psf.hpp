@@ -9,6 +9,12 @@ extern char _binary_font_psfu_end;
 #define PSF_MAGIC 0x864ab572
 #define PSF1_MAGIC 0x0436
 
+#ifdef DEBUG_OUTPUT
+#define DEBUG(x) graphics::psf::print()
+#else
+#define DEBUG(x)
+#endif
+
 namespace graphics::psf {
 struct PSFFont {
   uint32_t magic;

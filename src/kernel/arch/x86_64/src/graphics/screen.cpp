@@ -12,8 +12,6 @@ void initScreen() {
   // we need width*height*sizeof(uint32_t)
   // that doesn't clash with framebuffer, or kargs, or kernel (so less than 32MB)
   // we use width not pitch because we'll copy row-by-row anyway
-  // lets try 0x0 I guess?
-  // uint64_t startPtr = 0x0;
 
   uint64_t startKargs = (uint64_t) kargs;
   uint64_t endKargs = startKargs + kargs->totalSize;
@@ -25,7 +23,7 @@ void initScreen() {
   uint64_t i = 0;
   bool works = true;
 
-  for (i = 0; i < 3; i++) {
+  for (i = 0; i < 2; i++) {
     uint64_t startPtr = candidates[i];
     uint64_t endPtr = startPtr + (sizeof(uint32_t) * kargs->fbWidth * kargs->fbHeight);
     works = true;

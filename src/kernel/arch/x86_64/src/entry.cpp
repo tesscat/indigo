@@ -1,10 +1,34 @@
+#include "libstd/merge_sort.hpp"
+#include "loader/memory_descriptor.hpp"
+#include "memory/system_map.hpp"
 #include <graphics/psf.hpp>
 #include <graphics/screen.hpp>
 #include <loader/kernel_args.hpp>
+#include <libstd/itoa.hpp>
 
 #define loop_forever {__asm__ __volatile__ ("hlt"); while(1);}
 
 KernelArgs* kargs;
+
+const char* mNames[] = {
+    "ReservedMemoryType",
+    "LoaderCode",
+    "LoaderData",
+    "BootServicesCode",
+    "BootServicesData",
+    "RuntimeServicesCode",
+    "RuntimeServicesData",
+    "ConventionalMemory",
+    "UnusableMemory",
+    "ACPIReclaimMemory",
+    "ACPIMemoryNVS",
+    "MemoryMappedIO",
+    "MemoryMappedIOPortSpace",
+    "PalCode",
+    "PersistentMemory",
+    "UnacceptedMemoryType",
+    "MaxMemoryType"
+};
 
 extern "C" void _start(KernelArgs* args) {
     kargs = args;
@@ -21,21 +45,54 @@ extern "C" void _start(KernelArgs* args) {
         loop_forever;
     }
 
+    imsort(args->memDesc, 0, args->memDescCount);
 
-
-    // for (int i = 0; i < 50; i++) {
-    // graphics::psf::putchar('A' + i, 0x00FFFFFF, 0x00000000);
-    // graphics::psf::putchar('f', 200, 0);
-    // graphics::psf::print("abcdefg", 0x00FFFFFF, 0x00);
-    // }
-
-    // graphics::psf::putchar('f', 200, 0);
-    // graphics::psf::print("Lorem ipsum dolor sit amet, officia excepteur ex fugiat reprehenderit enim labore culpa sint ad nisi Lorem pariatur mollit ex esse exercitation amet. Nisi anim cupidatat excepteur officia. Reprehenderit nostrud nostrud ipsum Lorem est aliquip amet voluptate voluptate dolor minim nulla est proident. Nostrud officia pariatur ut officia. Sit irure elit esse ea nulla sunt ex occaecat reprehenderit commodo officia dolor Lorem duis laboris cupidatat officia voluptate. Culpa proident adipisicing id nulla nisi laboris ex in Lorem sunt duis officia eiusmod. Aliqua reprehenderit commodo ex non excepteur duis sunt velit enim. Voluptate laboris sint cupidatat ullamco ut ea consectetur et est culpa et culpa duis.", 0x00FFFFFF, 0x00);
+    #ifdef DEBUG_OUTPUT
     graphics::psf::print("Kernel arguments:");
     for (int i = 0; i < args->argc; i++) {
         graphics::psf::putchar(' ');
         graphics::psf::print(args->argv[i]);
     }
+
+    char sp[16];
+    int i = itoa(args->memDescCount, sp);
+    sp[i] = '\0';
+
+    graphics::psf::print("\nMem desc count: ");
+    graphics::psf::print(sp);
+
+    graphics::psf::print("\nStart | End | type");
+
+    
+    // there seems to be a garbage mDesc with base 0x0
+    for (int i = 0; i < args->memDescCount; i++) {
+        if (args->memDesc[i].physStart == 0x0) continue;
+        int t = args->memDesc[i].type;
+        // if (t == BootServicesCode || t == BootServicesData) continue;
+        // if (i%2 == 0) graphics::psf::print("\n");
+        // else graphics::psf::print("               ");
+        graphics::psf::print("\n");
+        int l = itoa(args->memDesc[i].physStart, sp, 16);
+        sp[l] = '\0';
+        graphics::psf::print("0x");
+        for (int j = 0; j < (16-l); j++) graphics::psf::print("0");
+        graphics::psf::print(sp);
+        int end = args->memDesc[i].physStart + 4*1024*args->memDesc[i].nrPages;
+        l = itoa(end, sp, 16);
+        sp[l] = '\0';
+        graphics::psf::print(" | 0x");
+        for (int j = 0; j < (16-l); j++) graphics::psf::print("0");
+        graphics::psf::print(sp);
+        if (args->memDesc[i].type >= MaxMemoryType || args->memDesc[i].type < 0) {
+            graphics::psf::print(" | Invalid");
+        } else {
+            graphics::psf::print(" | ");
+            graphics::psf::print(mNames[args->memDesc[i].type]);
+        }
+    }
+    #endif
+
+    memory::SystemMap map {args->memDesc, static_cast<size_t>(args->memDescCount), args->kernelSegments, static_cast<size_t>(args->kernelSegmentsCount)};
     
     loop_forever;
 }
