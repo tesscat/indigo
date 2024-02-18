@@ -15,8 +15,8 @@
 //     fb[(width)*y + x] = pixel;
 // }
 
-Kernel::Kernel(const char* path, ion::RootNode* root) {
-    // load us up
+Kernel::Kernel(const char* path, ion::RootNode* root, const char* trampPath) {
+    // load us up on kernel
     BinaryFile file = readBinaryFile(path);
     if (file.data == nullptr) {
         printf("Kernel not found or unreadable");
@@ -28,32 +28,59 @@ Kernel::Kernel(const char* path, ion::RootNode* root) {
         printf("unusable kernel, invalid ELF header");
         return;
     }
-    // printf("phsz: %i\n", header->progEntrySize);
 
-    // load segments
-    // elf::ProgHeader* prog_header = (elf::ProgHeader*)((uint8_t*)file.data + header->progHeaderPos);
+    uint64_t maxKAddr = 0;
+
+    printf("boutta load kernel");
+    // load kernel segments
     for (int i = 0; i < header->progHeaderTableLength; i++) {
         elf::ProgHeader* prog_header = (elf::ProgHeader*)((uint8_t*)file.data + header->progHeaderPos + i*header->progEntrySize);
-        // printf("iterint point %i\n", i);
-        // printf("pht: %i\n", prog_header->type);
-        // printf("o: %x v: %x\n", prog_header->fileOffset, prog_header->virtAddr);
         if (prog_header->type == PH_LOAD) {
-            // printf("Setting %i in memory\n", i);
-            memcpy((void*)prog_header->virtAddr, (uint8_t*)file.data + prog_header->fileOffset, prog_header->fileSize);
-            memset(((uint8_t*)prog_header->virtAddr + prog_header->fileSize), 0, prog_header->memSize - prog_header->fileSize);
+            printf("current pA is 0x%x\n", prog_header->physAddr);
+            memcpy((void*)prog_header->physAddr, (uint8_t*)file.data + prog_header->fileOffset, prog_header->fileSize);
+            memset(((uint8_t*)prog_header->physAddr + prog_header->fileSize), 0, prog_header->memSize - prog_header->fileSize);
+            uint64_t mAddr = prog_header->physAddr + prog_header->memSize;
+            if (mAddr > maxKAddr) maxKAddr = mAddr;
 
-            kSegs.Append(KernelSegmentLoc {.physLoc = prog_header->virtAddr, .len = prog_header->memSize});
+            kSegs.Append(KernelSegmentLoc {.physLoc = prog_header->physAddr, .len = prog_header->memSize});
+        }
+    }
+
+    // pick the addr for kArgs as above the end of the kernel
+    // we really should page-align it so we can mark not-exe in the future but that's future me problem
+    // TODO: see above
+    kArgsAddr = maxKAddr;
+    printf("Max kAddr was %x\n", maxKAddr);
+
+
+    // load trampoline segments
+    BinaryFile tFile = readBinaryFile(trampPath);
+    if (tFile.data == nullptr) {
+        printf("Trampoline not found or unreadable");
+        return;
+    }
+    // are we ELF?
+    elf::ExeHeader* tHeader = (elf::ExeHeader*) tFile.data;
+    if (!elf::isUsableElfExeHeader(tHeader)) {
+        printf("unusable trampoline, invalid ELF header");
+        return;
+    }
+
+    // load segments
+    for (int i = 0; i < tHeader->progHeaderTableLength; i++) {
+        elf::ProgHeader* prog_header = (elf::ProgHeader*)((uint8_t*)tFile.data + tHeader->progHeaderPos + i*tHeader->progEntrySize);
+        if (prog_header->type == PH_LOAD) {
+            memcpy((void*)prog_header->physAddr, (uint8_t*)tFile.data + prog_header->fileOffset, prog_header->fileSize);
+            memset(((uint8_t*)prog_header->physAddr + prog_header->fileSize), 0, prog_header->memSize - prog_header->fileSize);
         }
     }
 
 
-    void* entry_loc = (void*)header->entryPointPos;
+    void* entry_loc = (void*)tHeader->entryPointPos;
     entry = (void (* __attribute__((sysv_abi)))(KernelArgs*)) entry_loc;
 
-    // printf("entry pt: %x\n", entry_loc);
-    // while(1);
-
     delete (uint8_t*)file.data;
+    delete (uint8_t*)tFile.data;
 }
 
 void Kernel::Run(size_t argc, char** argv) {
@@ -78,10 +105,16 @@ void Kernel::Run(size_t argc, char** argv) {
 
     size += mmapSize;
 
-    // ok allocate it
-    KernelArgs* args = (KernelArgs*) malloc(size);
-    args->totalSize = size;
+    size_t kSegSize = sizeof(KernelSegmentLoc)*(kSegs.len + 1);
+    
+    // add the kernel segments, plus one for kargs itself
+    
+    size += kSegSize;
 
+    // ok allocate it
+    // turns out we cheatin. just chuck it a bit above the kernel
+    KernelArgs* args = (KernelArgs*) kArgsAddr;
+    args->totalSize = size;
 
     // do the graphics
     FramebufferDescriptor fb = gopSetup();
@@ -106,9 +139,21 @@ void Kernel::Run(size_t argc, char** argv) {
         currentStr += (len + 1);
     }
 
+    // add the kSegDescs
+    args->kernelSegments = (KernelSegmentLoc*)(args + args->totalSize);
+    args->kernelSegmentsCount = kSegs.len;
+    for (int i = 0; i < args->kernelSegmentsCount; i++) {
+        args->kernelSegments[i] = kSegs[i];
+    }
+    // add kargs itself
+    args->kernelSegments[args->kernelSegmentsCount].len = args->totalSize;
+    args->kernelSegments[args->kernelSegmentsCount].physLoc = (uint64_t)args;
+
+    args->kernelSegmentsCount += 1;
+
     // do the memory map things
     // get the start ptr by end of kargs - mmap size
-    MemoryDescriptor* mmapStart = (MemoryDescriptor*)((size_t)args + args->totalSize - mmapSize);
+    MemoryDescriptor* mmapStart = (MemoryDescriptor*)((size_t)args + args->totalSize - mmapSize - kSegSize);
     int acc_len = 0;
     // convert over to our nice mmaps
     for (int i = 0; i < origInfo.fullSize; i += origInfo.descriptorSize) {
@@ -124,17 +169,12 @@ void Kernel::Run(size_t argc, char** argv) {
     // set len
     args->memDescCount = acc_len;
     // update the size
-    args->totalSize -= (mmapSize - acc_len*sizeof(MemoryDescriptor)); 
+    args->totalSize -= (mmapSize - acc_len*sizeof(MemoryDescriptor));
+    args->kernelSegments[args->kernelSegmentsCount - 1].len = args->totalSize;
     // set the ptr
     args->memDesc = mmapStart;
 
-    // add the kSegDescs
-    args->kernelSegments = (KernelSegmentLoc*)(args + args->totalSize);
-    args->kernelSegmentsCount = kSegs.len;
-    for (int i = 0; i < args->kernelSegmentsCount; i++) {
-        args->kernelSegments[i] = kSegs[i];
-    }
-    args->totalSize += sizeof(KernelSegmentLoc)*args->kernelSegmentsCount;
+
 
     // printf("p: %i w: %i h: %i\n", args->fbPitch, args->fbWidth, args->fbHeight);
 
@@ -144,6 +184,7 @@ void Kernel::Run(size_t argc, char** argv) {
         printf("Failed to exit bootservices.\n");
         while(1);
     }
+
     // for (uint64_t i = 0; i < (args->fbPitch * args->fbHeight); i++) {
     // args->framebuffer[i] = 0xFFFFFFFF;
     // }

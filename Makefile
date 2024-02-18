@@ -8,7 +8,7 @@ BUILD_DIR := build
 OUT_DIR := out
 SRC_DIR := src
 # ARCH_DIR := $(SRC_DIR)/$(TARGET)/arch/$(ARCH)/
-COMPONENTS := loader kernel
+COMPONENTS := loader kernel trampoline
 
 LIBS_DIR := $(SRC_DIR)/libs
 
@@ -22,7 +22,7 @@ PREFIX := $(ARCH)-elf
 # AS := $(PREFIX)-g++
 LD := ld.lld
 # ifdef $(DEBUG)
-CPPC := clang++ -g
+CPPC := clang++ -std=c++20 -g
 # else
 # CPPC := clang++
 # endif
@@ -50,7 +50,7 @@ NASM_FLAGS_32 := -felf32
 # default: $(OUT_DIR)/$(TARGET)
 
 clean:
-	rm -r $(OUT_DIR) $(BUILD_DIR)
+	rm -r $(OUT_DIR) $(BUILD_DIR) | true
 
 COMPONENT_FILES := $(foreach component, $(COMPONENTS), $(SRC_DIR)/$(component)/arch/$(ARCH)/$(component).mk)
 

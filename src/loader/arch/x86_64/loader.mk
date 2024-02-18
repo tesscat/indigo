@@ -46,7 +46,7 @@ $(BUILD_DIR)/$(LOADER_SYSROOT_NAME)/: $(OUT_DIR)/$(LOADER_NAME).efi
 	mkdir -p $@/EFI/BOOT
 	cp -r $< $@/EFI/BOOT/BOOTX64.EFI
 
-$(OUT_DIR)/$(LOADER_SYSROOT_NAME)/: $(BUILD_DIR)/$(LOADER_SYSROOT_NAME)/ $(BUILD_DIR)/$(LOADER_SYSROOT_NAME)/kernel
+$(OUT_DIR)/$(LOADER_SYSROOT_NAME)/: $(BUILD_DIR)/$(LOADER_SYSROOT_NAME)/ $(BUILD_DIR)/$(LOADER_SYSROOT_NAME)/kernel $(BUILD_DIR)/$(LOADER_SYSROOT_NAME)/trampoline
 	cp -r $< $@
 
 $(OUT_DIR)/$(LOADER_NAME).efi: $(BUILD_DIR)/$(LOADER_NAME).efi
@@ -69,7 +69,7 @@ $(OUT_DIR)/$(PROJECT).bin: $(BUILD_DIR)/$(PROJECT).bin
 run: $(OUT_DIR)/$(PROJECT).bin
 	qemu-system-$(ARCH) -m 2G -s -S -bios /usr/share/edk2-ovmf/x64/OVMF.fd -net none -hda $^ &
 	sleep 0.5
-	lldb $(OUT_DIR)/kernel -o 'gdb-remote localhost:1234'
+	lldb $(OUT_DIR)/trampoline $(OUT_DIR)/$(LOADER_NAME).efi $(OUT_DIR)/kernel -o 'gdb-remote localhost:1234'
 # else
 # run: $(OUT_DIR)/$(PROJECT).bin
 	# qemu-system-$(ARCH) -bios /usr/share/edk2-ovmf/x64/OVMF.fd -net none -hda $^

@@ -72,7 +72,7 @@ struct ProgHeader {
   // where in memory should we load this segment to?
   uint64_t virtAddr;
   // undefined for SYSV ABI, posix-uefi claims it's physical addr?
-  uint64_t padding;
+  uint64_t physAddr;
   // how big is it in the file
   uint64_t fileSize;
   // how big should it be in memory

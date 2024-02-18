@@ -3,3 +3,4 @@ kernel = {
   path = "kernel"
   args = ["something", "else"]
 }
+trampoline = "trampoline"

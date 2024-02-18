@@ -29,11 +29,11 @@ listobjs:
 
 $(BUILD_DIR)/$(KERNEL_NAME)/%.o: $(SRC_DIR)/$(KERNEL_NAME)/%.cpp
 	mkdir -p $(shell dirname $@)
-	$(CPPC) $(BASE_FLAGS) -fno-stack-protector -fno-stack-check $(INC_FLAGS) -c $< -o $@
+	$(CPPC) $(BASE_FLAGS) -mcmodel=large -fno-stack-protector -fno-stack-check $(INC_FLAGS) -c $< -o $@
 
 $(OUT_DIR)/$(KERNEL_NAME): $(KERNEL_OBJS)
 	mkdir -p $(shell dirname $@)
-	$(LD) $(LD_FLAGS) -z max-page-size=0x1000 -Ttext=0x01000000 $^ -o $@
+	$(LD) $(LD_FLAGS) -z max-page-size=0x1000 -T $(KERNEL_ARCH_DIR)/kernel.ld $^ -o $@
 
 $(BUILD_DIR)/$(LOADER_SYSROOT_NAME)/kernel: $(OUT_DIR)/$(KERNEL_NAME)
 	mkdir -p $(shell dirname $@)

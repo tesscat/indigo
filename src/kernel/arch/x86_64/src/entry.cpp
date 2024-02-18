@@ -94,5 +94,19 @@ extern "C" void _start(KernelArgs* args) {
 
     memory::SystemMap map {args->memDesc, static_cast<size_t>(args->memDescCount), args->kernelSegments, static_cast<size_t>(args->kernelSegmentsCount)};
     
+    // okay. we are _currently_ identity-mapped with paging.
+    // what we want to do is remap the next kernel to like 0x0xf00000000000
+    // lets do some exploring of the current page table
+    //
+    // get CR3, the address of the current page table
+    // uint64_t i;
+    // asm("\t movq %%cr3,%0" : "=r"(i));
+    // we are probably four-level page'd
+    
+
+    // lets build a page table that:
+    // - maps the next loader s
+
+
     loop_forever;
 }
