@@ -23,6 +23,12 @@ typedef enum {
     MaxMemoryType
 } MemoryType;
 
+
+inline bool isUsableMemory(MemoryType type) {
+    // https://uefi.org/htmlspecs/ACPI_Spec_6_4_html/15_System_Address_Map_Interfaces/uefi-getmemorymap-boot-services-function.html
+    return (1 <= type && 4 >= type) || type == 7;
+}
+
 struct MemoryDescriptor {
     MemoryType type : 32;
     uint64_t physStart;

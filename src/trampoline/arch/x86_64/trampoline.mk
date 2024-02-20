@@ -22,9 +22,6 @@ TRAMPOLINE_OBJS := $(TRAMPOLINE_SILVER_OBJ) $(TRAMPOLINE_AS_OBJ) $(TRAMPOLINE_CP
 
 .PHONY: project run listobjs
 
-listobjs:
-	echo $(TRAMPOLINE_OBJS)
-
 $(BUILD_DIR)/$(TRAMPOLINE_NAME)/%.o: $(SRC_DIR)/$(TRAMPOLINE_NAME)/%.cpp
 	mkdir -p $(shell dirname $@)
 	$(CPPC) $(BASE_FLAGS) -fno-stack-protector -fno-stack-check $(INC_FLAGS) -c $< -o $@

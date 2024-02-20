@@ -17,11 +17,6 @@ void printAsHex(int n, int l = 16) {
     graphics::psf::print(sp);
 }
 
-bool isUsableMemory(MemoryType type) {
-    // https://uefi.org/htmlspecs/ACPI_Spec_6_4_html/15_System_Address_Map_Interfaces/uefi-getmemorymap-boot-services-function.html
-    return (1 <= type && 4 >= type) || type == 7;
-}
-
 SystemMemMapEntry memmaps_full[0x400];
 
 SystemMap::SystemMap(MemoryDescriptor* mDescs, size_t mDescsCount, KernelSegmentLoc* kLocs, size_t kLocsCount) {

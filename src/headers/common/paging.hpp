@@ -4,7 +4,8 @@
 #include <stdint.h>
 
 namespace memory {
-struct PageDirectoryEntry {
+// The template for the higher-order entries
+struct PageEntryBase {
     // is this present in physical memory (ie if not we raise a page fault)
     bool present : 1;
     // read-write
@@ -31,6 +32,11 @@ struct PageDirectoryEntry {
     bool disableExecute : 1;
 } __attribute__((__packed__));
 
+using PageMapL4 = PageEntryBase;
+using PageDirPointer = PageEntryBase;
+using PageDirEntry = PageEntryBase;
+
+// The lowest-level one, this points to the actual RAM
 struct PageTableEntry {
     // is this present in physical memory (ie if not we raise a page fault)
     bool present : 1;
