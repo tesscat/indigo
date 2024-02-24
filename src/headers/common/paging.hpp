@@ -39,6 +39,9 @@ struct PageEntryBase {
     inline void setAddr(uint64_t physaddr) {
         addr = (physaddr >> 12);
     }
+    inline void clear() {
+        *((uint64_t*)this) = 0;
+    }
 } __attribute__((__packed__));
 
 // highest level, points to PageDirPointer[512], one of these is 512gb
@@ -82,7 +85,16 @@ struct PageTableEntry {
     inline void setAddr(uint64_t physaddr) {
         addr = (physaddr >> 12);
     }
+    inline void clear() {
+        *((uint64_t*)this) = 0;
+    }
 } __attribute__((__packed__));
+
+#define PML4_IDXOF(addr) (((addr) >> 39) & 511)
+#define PDP_IDXOF(addr) (((addr) >> 30) & 511)
+#define PDE_IDXOF(addr) (((addr) >> 21) & 511)
+#define PTE_IDXOF(addr) (((addr) >> 12) & 511)
+
 }
 
 #endif // !KERNEL_MEMORY_PAGING_HPP
