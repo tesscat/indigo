@@ -36,16 +36,19 @@ extern "C" void _start(KernelArgs* args) {
     graphics::screen::initScreen();
     for (unsigned int x = 0; x < kargs->fbWidth; x++) {
         for (unsigned int y = 0; y < kargs->fbHeight; y++) {
-            unsigned int pixel = ((255*x)/kargs->fbWidth & 0xFF) | 0xFF | ((((255*y)/kargs->fbHeight) << 8) & 0xFF00) | 0x00FF0000;
+            // unsigned int pixel = /* ((255*x)/kargs->fbWidth & 0xFF) |  */0x00000000 | ((((255*y)/kargs->fbHeight) << 8) & 0xFF00) /* | 0x00FF0000 */;
+            // unsigned int pixel = 0x00ff0000;
+            unsigned int pixel = 0x0000ff00 | ((((255*y)/kargs->fbHeight) & 0xff ) << 24);
             graphics::screen::plotPixel(x, y, pixel);
         }
     }
-    if (!args) {
-        graphics::psf::print("Please give me arguments as kernel params!!");
-        loop_forever;
+
+    if (!kargs->fbIsBGR) {
+        graphics::psf::print("NOT BGR reported");
     }
 
     imsort(args->memDesc, 0, args->memDescCount);
+
 
     #ifdef DEBUG_OUTPUT
     graphics::psf::print("Kernel arguments:");

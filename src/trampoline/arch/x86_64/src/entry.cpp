@@ -7,6 +7,7 @@
 
 KernelArgs* kargs;
 unsigned int* fb;
+uint64_t kEntry;
 
 extern char _tramp_start;
 extern char _tramp_end;
@@ -72,18 +73,22 @@ void setRecursiveMapping(memory::PageEntryBase* table) {
 extern "C" void enablePaging(uint64_t addr);
 
 extern "C" void returnTo() {
-    // kargs -> frameBuffer is currently unmapped
-    // TODO: need to fix paging to map this up
     fb[0] = 0xffff00ff;
-    //
+    
+    void (* __attribute__((sysv_abi)) kEntryFn)(KernelArgs*);
+    kEntryFn = (void (* __attribute__((sysv_abi)))(KernelArgs*))kEntry;
+
+    kEntryFn(kargs);
+
     loop_forever;
 }
 
-extern "C" void _start(KernelArgs* args) {
+extern "C" void _start(KernelArgs* args, uint64_t kEntryVAddr) {
     kargs = args;
+    kEntry = kEntryVAddr;
     fb = kargs->framebuffer;
     // set up a nice pagemap
-    // identity map wherever we are, and map 48MiB to idk 50MiB to 0xe00000000000 + 48MiB
+    // identity map wherever we are, and map 48MiB to idk 50MiB to 0xffffe00000000000 + 48MiB
     // and use the recursive mapping trick
     // 
     // find a segment of suitable size
@@ -181,7 +186,7 @@ extern "C" void _start(KernelArgs* args) {
     pageMapLowPDPD[0].setAddr((uint64_t)pageDir);
 
 
-    // we wanna map 48MB to 0xe00000000000 + 48MB
+    // we wanna map 48MB to 0xffffe00000000000 + 48MB
     // what index in the TL is 0xe... at? 
     // It's 229376 GiB, and each one is 512 GiB,
     // so it's at 448. which is coincidentally (0xe/0x10) through the table
@@ -272,9 +277,19 @@ extern "C" void _start(KernelArgs* args) {
         gopPDE[i].bigPage = true;
         gopPDE[i].setAddr(((1 << 21) * i) | addrHigh);
     }
+
+    // update the values of kernelArgs since theyre remapped
+    kargs->memDesc = (MemoryDescriptor*)((uint64_t)kargs->memDesc + 0xffffe00000000000);
+    kargs->kernelSegments = (KernelSegmentLoc*)((uint64_t)kargs->kernelSegments + 0xffffe00000000000);
+    // update all the char*s
+    for(int i = 0; i < kargs->argc; i++) {
+        kargs->argv[i] = (char*)((uint64_t)kargs->argv[i] + 0xffffe00000000000);
+    }
+    // then the array ptr itself
+    kargs->argv = (char**)((uint64_t)kargs->argv + 0xffffe00000000000);
     
-    // update kargs, since we've remapped it like 0xe... higher
-    kargs += 0xe00000000000;
+    // update kargs itself, since we've remapped it like 0xe... higher
+    kargs = (KernelArgs*)((uint64_t)kargs + 0xffffe00000000000);
 
     // okie the page tables are all set up
     // time for scary, we need to mov to CR3 the physical address

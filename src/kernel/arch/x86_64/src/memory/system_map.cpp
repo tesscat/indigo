@@ -110,7 +110,7 @@ SystemMap::SystemMap(MemoryDescriptor* mDescs, size_t mDescsCount, KernelSegment
     memMap = memmaps_full;
     memMapLen = curr_idx;
 
-// #ifdef DEBUG_OUTPUT
+#ifdef DEBUG_OUTPUT
 
     uint64_t tUsable = 0;
     uint64_t tKernel = 0;
@@ -134,7 +134,7 @@ SystemMap::SystemMap(MemoryDescriptor* mDescs, size_t mDescsCount, KernelSegment
     printAsHex(tUsable);
     graphics::psf::print("\nTotal used by kernel: ");
     printAsHex(tKernel);
-// #endif
+#endif
 }
 
 }

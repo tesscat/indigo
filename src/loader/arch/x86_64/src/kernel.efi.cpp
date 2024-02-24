@@ -9,11 +9,6 @@
 #include <kernel.hpp>
 #include <loader/kernel_args.hpp>
 #include <graphics.hpp>
-//
-// static inline void plotPixel(int x, int y, uint32_t* fb, uint64_t width, uint64_t pitch, uint32_t pixel)
-// {
-//     fb[(width)*y + x] = pixel;
-// }
 
 Kernel::Kernel(const char* path, ion::RootNode* root, const char* trampPath) {
     // load us up on kernel
@@ -77,7 +72,9 @@ Kernel::Kernel(const char* path, ion::RootNode* root, const char* trampPath) {
 
 
     void* entry_loc = (void*)tHeader->entryPointPos;
-    entry = (void (* __attribute__((sysv_abi)))(KernelArgs*)) entry_loc;
+    entry = (void (* __attribute__((sysv_abi)))(KernelArgs*, uint64_t)) entry_loc;
+
+    kEntry = header->entryPointPos;
 
     delete (uint8_t*)file.data;
     delete (uint8_t*)tFile.data;
@@ -123,6 +120,7 @@ void Kernel::Run(size_t argc, char** argv) {
     args->fbWidth = fb.width;
     args->fbHeight = fb.height;
     args->fbPitch = fb.pitch;
+    args->fbIsBGR = fb.format == BGRR;
 
     // string wrangling, fun times
     char** end = (char**) ((uint8_t*)args + size);
@@ -176,9 +174,6 @@ void Kernel::Run(size_t argc, char** argv) {
 
 
 
-    // printf("p: %i w: %i h: %i\n", args->fbPitch, args->fbWidth, args->fbHeight);
-
-
     // escape from the bootservices!!
     if (exit_bs() != 0) {
         printf("Failed to exit bootservices.\n");
@@ -188,11 +183,8 @@ void Kernel::Run(size_t argc, char** argv) {
     // interrupts are a No Thank You
     __asm__("cli");
 
-    // for (uint64_t i = 0; i < (args->fbPitch * args->fbHeight); i++) {
-    // args->framebuffer[i] = 0xFFFFFFFF;
-    // }
     // while(1);
     // okay we should be good to go
-    entry(args);
+    entry(args, kEntry);
     while(1);
 }

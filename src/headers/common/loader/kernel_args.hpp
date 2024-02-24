@@ -9,6 +9,7 @@ struct KernelArgs {
     unsigned int fbWidth;
     unsigned int fbHeight;
     unsigned int fbPitch;
+    bool fbIsBGR;
     int argc = 0;
     char** argv = nullptr;
     int memDescCount;

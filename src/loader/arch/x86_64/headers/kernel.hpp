@@ -7,7 +7,8 @@
 #include <ion_efi/ion_efi.hpp>
 
 class Kernel {
-    void (* __attribute__((sysv_abi)) entry)(KernelArgs*);
+    void (* __attribute__((sysv_abi)) entry)(KernelArgs*, uint64_t);
+    uint64_t kEntry;
     uint64_t kArgsAddr;
     indigo::Vec<KernelSegmentLoc> kSegs;
 public:
