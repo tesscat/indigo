@@ -185,6 +185,9 @@ void Kernel::Run(size_t argc, char** argv) {
         while(1);
     }
 
+    // interrupts are a No Thank You
+    __asm__("cli");
+
     // for (uint64_t i = 0; i < (args->fbPitch * args->fbHeight); i++) {
     // args->framebuffer[i] = 0xFFFFFFFF;
     // }

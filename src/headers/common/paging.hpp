@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 namespace memory {
+
 // The template for the higher-order entries
 struct PageEntryBase {
     // is this present in physical memory (ie if not we raise a page fault)
@@ -18,22 +19,33 @@ struct PageEntryBase {
     bool cacheDisabled : 1;
     // has this page been accessed since we last reset this bit?
     bool accessed : 1;
-    // free space
-    bool availableBit : 1;
-    // page size - are we mapping to a 4MiB page instead of a directory of 4KiB ones? (no)
+    // free space. this is Dirty if we're bigPaging
+    bool availableBit_orDirty : 1;
+    // page size - are we mapping to a 2MiB page instead of a directory of 4KiB ones? (no)
+    // This is reserved (0) on PML4-s
     bool bigPage : 1 = false;
+    // should we NOT invalidate the TLB after we MOV to cr3?
+    // free space if not bigPage
+    uint8_t availableBit_orGlobal : 1;
     // free space 2
-    uint8_t available : 4;
+    uint8_t available : 3;
     // the actual address
     uint64_t addr: 40;
     // more free space
     uint16_t available_2 : 11;
     // is execution disabled on this page?
     bool disableExecute : 1;
+
+    inline void setAddr(uint64_t physaddr) {
+        addr = (physaddr >> 12);
+    }
 } __attribute__((__packed__));
 
+// highest level, points to PageDirPointer[512], one of these is 512gb
 using PageMapL4 = PageEntryBase;
+// second level, points to PageDirEntry[512], one of these is 1gb
 using PageDirPointer = PageEntryBase;
+// third level, points to PageTableEntry[512], one of these is 2 MiB
 using PageDirEntry = PageEntryBase;
 
 // The lowest-level one, this points to the actual RAM
@@ -66,6 +78,10 @@ struct PageTableEntry {
     uint8_t protectionKey : 4;
     // is execution disabled on this page?
     bool disableExecute : 1;
+
+    inline void setAddr(uint64_t physaddr) {
+        addr = (physaddr >> 12);
+    }
 } __attribute__((__packed__));
 }
 

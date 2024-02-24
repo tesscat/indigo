@@ -22,7 +22,7 @@ PREFIX := $(ARCH)-elf
 # AS := $(PREFIX)-g++
 LD := ld.lld
 # ifdef $(DEBUG)
-CPPC := clang++ -std=c++20 -g
+CPPC := clang++ -std=c++20 -g -O0
 # else
 # CPPC := clang++
 # endif
@@ -30,7 +30,7 @@ CPPC := clang++ -std=c++20 -g
 # LD_32 := $(PREFIX_32)-g++
 # CPPC_32 := $(PREFIX_32)-g++
 
-NASM_32 := nasm
+NASM := nasm
 # AS := clang++
 # LD := clang++
 # CPPC := clang++
@@ -38,14 +38,12 @@ SILVERC := x
 SILVERC_2 := clang
 SILVERC_2_FLAGS := -ffreestanding -Wall -Wextra -fno-exceptions -fno-rtti
 
-BASE_FLAGS := $(INC_FLAGS) -ffreestanding -nostdlib -mno-red-zone -mno-sse -mno-sse2 -mno-mmx -mno-avx -fno-pie -no-pie -O2 -fno-rtti -Wall -Wextra -fno-exceptions
+BASE_FLAGS := $(INC_FLAGS) -ffreestanding -nostdlib -mno-red-zone -mno-sse -mno-sse2 -mno-mmx -mno-avx -fno-pie -no-pie -fno-rtti -Wall -Wextra -fno-exceptions
 AS_FLAGS := $(BASE_FLAGS)
 
 LD_FLAGS := -nostdlib --no-pie
 
-AS_FLAGS_32 :=
-FLAGS_32 :=
-NASM_FLAGS_32 := -felf32
+NASM_FLAGS := -felf64 -g
 
 # default: $(OUT_DIR)/$(TARGET)
 

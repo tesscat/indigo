@@ -26,6 +26,10 @@ $(BUILD_DIR)/$(TRAMPOLINE_NAME)/%.o: $(SRC_DIR)/$(TRAMPOLINE_NAME)/%.cpp
 	mkdir -p $(shell dirname $@)
 	$(CPPC) $(BASE_FLAGS) -fno-stack-protector -fno-stack-check $(INC_FLAGS) -c $< -o $@
 
+$(BUILD_DIR)/$(TRAMPOLINE_NAME)/%.o: $(SRC_DIR)/$(TRAMPOLINE_NAME)/%.s
+	mkdir -p $(shell dirname $@)
+	$(NASM) $(NASM_FLAGS) $^ -o $@
+
 $(OUT_DIR)/$(TRAMPOLINE_NAME): $(TRAMPOLINE_OBJS)
 	mkdir -p $(shell dirname $@)
 	$(LD) $(LD_FLAGS) -z max-page-size=0x1000 -T $(TRAMPOLINE_ARCH_DIR)/trampoline.ld $^ -o $@
