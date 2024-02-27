@@ -95,7 +95,7 @@ extern "C" void _start(KernelArgs* args) {
     }
     #endif
 
-    memory::SystemMap map {args->memDesc, static_cast<size_t>(args->memDescCount), args->kernelSegments, static_cast<size_t>(args->kernelSegmentsCount)};
+    memory::SystemMap map {args->memDesc, static_cast<size_t>(args->memDescCount)};
     
     // okay. we are _currently_ identity-mapped with paging.
     // what we want to do is remap the next kernel to like 0x0xf00000000000

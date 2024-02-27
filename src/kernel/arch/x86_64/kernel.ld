@@ -9,7 +9,7 @@ SECTIONS
     /* Note that we page-align the sections. */
     /* Due to x86_64 sign-extension style addressing, this becomes 0xffffe00000000000 */
 
-    _kernel_start = .;
+    _kernel_phys_start = .;
 
     . += 0xffffe00000000000;
     /* Add a symbol that indicates the start address of the kernel. */
@@ -33,5 +33,5 @@ SECTIONS
         *(.bootstrap_stack)
     }
     /* Add a symbol that indicates the end address of the kernel. */
-    _kernel_end = .;
+    _kernel_phys_end = . - 0xffffe00000000000;
 }

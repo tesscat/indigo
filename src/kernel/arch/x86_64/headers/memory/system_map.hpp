@@ -21,7 +21,7 @@ class SystemMap {
     SystemMemMapEntry* memMap;
     size_t memMapLen;
 public:
-    SystemMap(MemoryDescriptor* mDescs, size_t mDescsCount, KernelSegmentLoc* kLocs, size_t kLocsCount);
+    SystemMap(MemoryDescriptor* mDescs, size_t mDescsCount);
 };
 }
 

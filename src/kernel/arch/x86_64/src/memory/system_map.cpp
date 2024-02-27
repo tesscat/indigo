@@ -19,7 +19,10 @@ void printAsHex(int n, int l = 16) {
 
 SystemMemMapEntry memmaps_full[0x400];
 
-SystemMap::SystemMap(MemoryDescriptor* mDescs, size_t mDescsCount, KernelSegmentLoc* kLocs, size_t kLocsCount) {
+extern "C" char _kernel_phys_start;
+extern "C" char _kernel_phys_end;
+
+SystemMap::SystemMap(MemoryDescriptor* mDescs, size_t mDescsCount) {
     // sort mDescs
     // mergeSort(mDescs, 0, mDescsCount);
     // uint8_t heap_back[0x4000];
@@ -55,54 +58,64 @@ SystemMap::SystemMap(MemoryDescriptor* mDescs, size_t mDescsCount, KernelSegment
         i = j+1;
     }
 
+    for (int i = 0; i < mmaps_idx; i++) {
+        graphics::psf::print("\n");
+        printAsHex(mmaps[i].start);
+
+        int end = mmaps[i].start + mmaps[i].len;
+        graphics::psf::print(" | ");
+        printAsHex(end);
+        graphics::psf::print(" | ");
+
+    }
+    
+    uint64_t kStart = (uint64_t) &_kernel_phys_start;
+    uint64_t kEnd = (uint64_t) &_kernel_phys_end;
     // copy it across and add in kernel segments
     int j = 0;
     int curr_idx = 0;
     while (j < mmaps_idx) {
-        int found = 1;
         uint64_t curr_start = mmaps[j].start;
         uint64_t curr_len = mmaps[j].len;
-        while (found != 0) {
-            if (curr_len == 0) break;
-            // are there any kernel segments in the current sector?
-            uint64_t lowestPoss = -1;
-            uint64_t idx;
-            found = 0;
-            for (size_t k = 0; k < kLocsCount; k++) {
-                if (kLocs[k].physLoc >= curr_start && kLocs[k].physLoc <= curr_start + curr_len && kLocs[k].len != 0) {
-                    // its in
-                    if (kLocs[k].physLoc < lowestPoss || found == 0) {
-                        found++;
-                        lowestPoss = kLocs[k].physLoc;
-                        idx = k;
-                    }
-                }
-            }
-            if (found != 0) {
-                // ok there are `found` segments. split us on up.
-                if (lowestPoss != mmaps[j].start) {
-                    // add in a free bit beforehand
-                    memmaps_full[curr_idx].start = curr_start;
-                    memmaps_full[curr_idx].len = lowestPoss - curr_start;
-                    memmaps_full[curr_idx].type = Free;
-                    curr_idx++;
-                }
-                // add in the kernelly bit
-                memmaps_full[curr_idx].start = lowestPoss;
-                memmaps_full[curr_idx].len = kLocs[idx].len;
-                memmaps_full[curr_idx].type = Kernel;
-                curr_idx++;
-                curr_start = lowestPoss + kLocs[idx].len;
-                curr_len -= kLocs[idx].len;
-                // mark it as done
-                kLocs[idx].len = 0;
-            } else {
-                // add in whatever we have
+        uint64_t curr_end = curr_start + curr_len;
+
+        // do we overlap at all?
+        if (
+            (curr_start <= kStart && curr_end >= kStart) ||
+            (curr_start <= kEnd && curr_end >= kEnd)
+        ) {
+            // ah we do
+            // split us up into a before, an after and a kernel seg
+            if (curr_start < kStart) {
+                // there's a before
                 memmaps_full[curr_idx].start = curr_start;
-                memmaps_full[curr_idx].len = curr_len;
+                memmaps_full[curr_idx].len = kStart - curr_start;
                 memmaps_full[curr_idx].type = Free;
                 curr_idx++;
             }
+            // do the kernelly bit
+            memmaps_full[curr_idx].start = kStart;
+            memmaps_full[curr_idx].len = kEnd - kStart;
+            memmaps_full[curr_idx].type = Kernel;
+            curr_idx++;
+            // in case kernel spills out of one segment (it shouldn't really)
+            // while (kEnd > (mmaps[j].start + mmaps[j].len) && j < mmaps_idx) {
+            //     j++;
+            // }
+            // if (j >= mmaps_idx) break;
+            // do an after bit
+            if (kEnd < curr_end) {
+                memmaps_full[curr_idx].start = kEnd;
+                memmaps_full[curr_idx].len = curr_end - kEnd;
+                memmaps_full[curr_idx].type = Free;
+                curr_idx++;
+            }
+        } else {
+            // we do not :)
+            memmaps_full[curr_idx].start = curr_start;
+            memmaps_full[curr_idx].len = curr_len;
+            memmaps_full[curr_idx].type = Free;
+            curr_idx++;
         }
         j++;
     }
@@ -110,12 +123,12 @@ SystemMap::SystemMap(MemoryDescriptor* mDescs, size_t mDescsCount, KernelSegment
     memMap = memmaps_full;
     memMapLen = curr_idx;
 
-#ifdef DEBUG_OUTPUT
+// #ifdef DEBUG_OUTPUT
 
     uint64_t tUsable = 0;
     uint64_t tKernel = 0;
 
-    graphics::psf::print("\n");
+    graphics::psf::print("\nFull data:\n");
     for (int i =0; i < curr_idx; i++) {
         graphics::psf::print("\n");
         printAsHex(memMap[i].start);
@@ -134,7 +147,7 @@ SystemMap::SystemMap(MemoryDescriptor* mDescs, size_t mDescsCount, KernelSegment
     printAsHex(tUsable);
     graphics::psf::print("\nTotal used by kernel: ");
     printAsHex(tKernel);
-#endif
+// #endif
 }
 
 }
