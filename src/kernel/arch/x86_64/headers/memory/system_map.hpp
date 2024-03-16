@@ -16,13 +16,10 @@ struct SystemMemMapEntry {
     size_t len;
 };
 
-class SystemMap {
+extern SystemMemMapEntry memMap[0x400];
+extern uint64_t memMapLen;
 
-    SystemMemMapEntry* memMap;
-    size_t memMapLen;
-public:
-    SystemMap(MemoryDescriptor* mDescs, size_t mDescsCount);
-};
+void initSystemMap(MemoryDescriptor* mDescs, size_t mDescsCount);
 }
 
 #endif // !KERNEL_MEMORY_SYSTEM_MAP_HPP

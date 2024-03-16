@@ -1,7 +1,6 @@
 #include "graphics/psf.hpp"
 #include "libstd/merge_sort.hpp"
 #include "loader/memory_descriptor.hpp"
-#include "memory/basic_heap.hpp"
 #include <cstdint>
 #include <memory/system_map.hpp>
 #include <libstd/itoa.hpp>
@@ -17,16 +16,13 @@ void printAsHex(int n, int l = 16) {
     graphics::psf::print(sp);
 }
 
-SystemMemMapEntry memmaps_full[0x400];
+SystemMemMapEntry memMap[0x400];
+uint64_t memMapLen;
 
 extern "C" char _kernel_phys_start;
 extern "C" char _kernel_phys_end;
 
-SystemMap::SystemMap(MemoryDescriptor* mDescs, size_t mDescsCount) {
-    // sort mDescs
-    // mergeSort(mDescs, 0, mDescsCount);
-    // uint8_t heap_back[0x4000];
-    // basic_heap::BasicHeap heap {heap_back, 0x4000};
+void initSystemMap(MemoryDescriptor* mDescs, size_t mDescsCount) {
     SystemMemMapEntry mmaps[0x400];
     int mmaps_idx = 0;
     size_t i = 0;
@@ -57,17 +53,6 @@ SystemMap::SystemMap(MemoryDescriptor* mDescs, size_t mDescsCount) {
 
         i = j+1;
     }
-
-    for (int i = 0; i < mmaps_idx; i++) {
-        graphics::psf::print("\n");
-        printAsHex(mmaps[i].start);
-
-        int end = mmaps[i].start + mmaps[i].len;
-        graphics::psf::print(" | ");
-        printAsHex(end);
-        graphics::psf::print(" | ");
-
-    }
     
     uint64_t kStart = (uint64_t) &_kernel_phys_start;
     uint64_t kEnd = (uint64_t) &_kernel_phys_end;
@@ -88,42 +73,41 @@ SystemMap::SystemMap(MemoryDescriptor* mDescs, size_t mDescsCount) {
             // split us up into a before, an after and a kernel seg
             if (curr_start < kStart) {
                 // there's a before
-                memmaps_full[curr_idx].start = curr_start;
-                memmaps_full[curr_idx].len = kStart - curr_start;
-                memmaps_full[curr_idx].type = Free;
+                memMap[curr_idx].start = curr_start;
+                memMap[curr_idx].len = kStart - curr_start;
+                memMap[curr_idx].type = Free;
                 curr_idx++;
             }
             // do the kernelly bit
-            memmaps_full[curr_idx].start = kStart;
-            memmaps_full[curr_idx].len = kEnd - kStart;
-            memmaps_full[curr_idx].type = Kernel;
+            memMap[curr_idx].start = kStart;
+            memMap[curr_idx].len = kEnd - kStart;
+            memMap[curr_idx].type = Kernel;
             curr_idx++;
             // in case kernel spills out of one segment (it shouldn't really)
-            // while (kEnd > (mmaps[j].start + mmaps[j].len) && j < mmaps_idx) {
-            //     j++;
-            // }
-            // if (j >= mmaps_idx) break;
+            while (kEnd > (mmaps[j].start + mmaps[j].len) && j < mmaps_idx) {
+                j++;
+            }
+            if (j >= mmaps_idx) break;
             // do an after bit
             if (kEnd < curr_end) {
-                memmaps_full[curr_idx].start = kEnd;
-                memmaps_full[curr_idx].len = curr_end - kEnd;
-                memmaps_full[curr_idx].type = Free;
+                memMap[curr_idx].start = kEnd;
+                memMap[curr_idx].len = curr_end - kEnd;
+                memMap[curr_idx].type = Free;
                 curr_idx++;
             }
         } else {
             // we do not :)
-            memmaps_full[curr_idx].start = curr_start;
-            memmaps_full[curr_idx].len = curr_len;
-            memmaps_full[curr_idx].type = Free;
+            memMap[curr_idx].start = curr_start;
+            memMap[curr_idx].len = curr_len;
+            memMap[curr_idx].type = Free;
             curr_idx++;
         }
         j++;
     }
 
-    memMap = memmaps_full;
     memMapLen = curr_idx;
 
-// #ifdef DEBUG_OUTPUT
+#ifdef DEBUG_OUTPUT
 
     uint64_t tUsable = 0;
     uint64_t tKernel = 0;
@@ -147,7 +131,7 @@ SystemMap::SystemMap(MemoryDescriptor* mDescs, size_t mDescsCount) {
     printAsHex(tUsable);
     graphics::psf::print("\nTotal used by kernel: ");
     printAsHex(tKernel);
-// #endif
+#endif
 }
 
 }

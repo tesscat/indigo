@@ -1,12 +1,11 @@
 #include "libstd/merge_sort.hpp"
-#include "loader/memory_descriptor.hpp"
 #include "memory/system_map.hpp"
 #include <graphics/psf.hpp>
 #include <graphics/screen.hpp>
 #include <loader/kernel_args.hpp>
 #include <libstd/itoa.hpp>
-
-#define loop_forever {__asm__ __volatile__ ("hlt"); while(1);}
+#include <memory/phys_alloc.hpp>
+#include <util/util.hpp>
 
 KernelArgs* kargs;
 
@@ -36,8 +35,6 @@ extern "C" void _start(KernelArgs* args) {
     graphics::screen::initScreen();
     for (unsigned int x = 0; x < kargs->fbWidth; x++) {
         for (unsigned int y = 0; y < kargs->fbHeight; y++) {
-            // unsigned int pixel = /* ((255*x)/kargs->fbWidth & 0xFF) |  */0x00000000 | ((((255*y)/kargs->fbHeight) << 8) & 0xFF00) /* | 0x00FF0000 */;
-            // unsigned int pixel = 0x00ff0000;
             unsigned int pixel = 0x0000ff00 | ((((255*y)/kargs->fbHeight) & 0xff ) << 24);
             graphics::screen::plotPixel(x, y, pixel);
         }
@@ -71,9 +68,6 @@ extern "C" void _start(KernelArgs* args) {
     for (int i = 0; i < args->memDescCount; i++) {
         if (args->memDesc[i].physStart == 0x0) continue;
         int t = args->memDesc[i].type;
-        // if (t == BootServicesCode || t == BootServicesData) continue;
-        // if (i%2 == 0) graphics::psf::print("\n");
-        // else graphics::psf::print("               ");
         graphics::psf::print("\n");
         int l = itoa(args->memDesc[i].physStart, sp, 16);
         sp[l] = '\0';
@@ -95,21 +89,11 @@ extern "C" void _start(KernelArgs* args) {
     }
     #endif
 
-    memory::SystemMap map {args->memDesc, static_cast<size_t>(args->memDescCount)};
-    
-    // okay. we are _currently_ identity-mapped with paging.
-    // what we want to do is remap the next kernel to like 0x0xf00000000000
-    // lets do some exploring of the current page table
-    //
-    // get CR3, the address of the current page table
-    // uint64_t i;
-    // asm("\t movq %%cr3,%0" : "=r"(i));
-    // we are probably four-level page'd
-    
+    memory::initSystemMap(args->memDesc, static_cast<size_t>(args->memDescCount));
 
-    // lets build a page table that:
-    // - maps the next loader s
+    memory::initPhysAllocator();
 
+    
 
     loop_forever;
 }

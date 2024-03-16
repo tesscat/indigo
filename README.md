@@ -4,3 +4,11 @@ sane coding conventions:
 - TypesInPascal
 - functionsInCamel
 - membersInCamel
+
+#### Plan:
+there is no proper plan.  
+I need to:
+- implement a page _allocator_ atop the phys address allocator, with which I can:
+- - ask for N contiguous bytes of memory, optionally at a specific physical address
+- - specify which virtual address this should be mapped to
+- - handle freeing of pages

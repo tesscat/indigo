@@ -1,5 +1,5 @@
-#ifndef KERNEL_MEMORY_BASIC_HEAP_HPP
-#define KERNEL_MEMORY_BASIC_HEAP_HPP
+#ifndef KERNEL_UTIL_BASIC_HEAP_HPP
+#define KERNEL_UTIL_BASIC_HEAP_HPP
 
 #include <cstddef>
 #include <stdint.h>
@@ -20,4 +20,4 @@ public:
 };
 }
 
-#endif // !KERNEL_MEMORY_BASIC_HEAP_HPP
+#endif // !KERNEL_UTIL_BASIC_HEAP_HPP
