@@ -8,6 +8,9 @@
 //
 // 10 is undefined
 //
+// This means that _1 <=> not worth searching for the current size and vice versa,
+// and 0_ <=> worth searching for smaller sizes and vice versa.
+//
 // There can be desync!! We can mark a higher level page as Completely Taken and all the lower pages don't need updating.
 // The highest level must always hold true.
 // We use 4KiB, 128KiB, 2M, 64M, 128M sections
@@ -24,10 +27,11 @@ extern "C" char _kernel_phys_start;
 
 const uint64_t sectSizes[] = {4*KiB, 128*KiB, 2*MiB, 64*MiB/* , 128*MiB */};
 uint64_t* maps[N_MAPS];
+// the size in Individual Markers (32 per 64bits)
 uint64_t mapSizes[N_MAPS];
 
-#define idx_var(addr, sectSize) (addr/(32*((uint64_t)sectSize)))
-#define offs_var(addr, sectSize) ((addr/sectSize) % 32)
+#define idx_var(addr, sectSize) ((addr)/(32*((uint64_t)(sectSize))))
+#define offs_var(addr, sectSize) ((((addr)/(sectSize)) % 32)*2)
 
 #define idx_4k(addr) idx_var(addr, 4*KiB)
 #define offs_4k(addr) offs_var(addr, 4*KiB)
@@ -48,10 +52,12 @@ uint64_t mapSizes[N_MAPS];
 #define max_64bits 0xffffffffffffffff
 #define max_32bits (uint64_t)0xffffffff
 // checks the first bit of each, since both 0b10 and 0b11 mean unusable
-#define used_64bits 0xaaaaaaaaaaaaaaaa // 0xa == 0b1010
+#define fully_used_64bits 0xaaaaaaaaaaaaaaaa // 0xa == 0b1010
+#define partially_used_64bits 0x5555555555555555 // 0x5 = 0b0101
 
 namespace memory {
 
+// inline bitmap operations {{{
 inline void or4kAddr(uint64_t addr, uint8_t val) {
     maps[0][idx_4k(addr)] |= (val << offs_4k(addr));
 }
@@ -59,10 +65,13 @@ inline void or128kAddr(uint64_t addr, uint8_t val) {
     maps[1][idx_128k(addr)] |= (val << offs_128k(addr));
 }
 inline void or2mAddr(uint64_t addr, uint8_t val) {
-    maps[2][idx_2m(addr)] |= (val << offs_2m(addr));
+    // uint64_t idx =
+    auto idx = idx_2m(addr);
+    auto offs = offs_2m(addr);
+    maps[2][idx] |= (val << offs);
 }
 inline void or64mAddr(uint64_t addr, uint8_t val) {
-    maps[2][idx_64m(addr)] |= (val << offs_64m(addr));
+    maps[3][idx_64m(addr)] |= (val << offs_64m(addr));
 }
 
 inline void clear4kAddr(uint64_t addr) {
@@ -75,10 +84,11 @@ inline void clear2mAddr(uint64_t addr) {
     maps[2][idx_2m(addr)] &= ~(uint64_t)(0b11 << offs_2m(addr));
 }
 inline void clear64mAddr(uint64_t addr) {
-    maps[2][idx_64m(addr)] &= ~(uint64_t)(0b11 << offs_64m(addr));
+    maps[3][idx_64m(addr)] &= ~(uint64_t)(0b11 << offs_64m(addr));
 }
+// }}}
 
-
+// marking as used {{{
 inline void mark64mAsUsed(uint64_t addr) {
     or64mAddr(addr, 0b11);
 }
@@ -87,7 +97,7 @@ void mark2mAsUsed(uint64_t addr) {
 
     // check again
     // no mask this time
-    if (!((maps[2][idx_2m(addr)] & used_64bits) == used_64bits)) {
+    if (!((maps[2][idx_2m(addr)] & fully_used_64bits) == fully_used_64bits)) {
         or64mAddr(addr, 0b01);
         return;
     }
@@ -101,13 +111,13 @@ void mark128kAsUsed(uint64_t addr) {
     // ok do we need to escalate again?
     // we need to check 16 entries, or 32bits
     uint64_t mask = ishigh_128k(addr) ? (max_32bits << 32) : max_32bits;
-    if (!((maps[1][idx_128k(addr)] & used_64bits & mask) == (used_64bits & mask))) {
+    if (!((maps[1][idx_128k(addr)] & fully_used_64bits & mask) == (fully_used_64bits & mask))) {
         // mark higher as partial
         or2mAddr(addr, 0b01);
         or64mAddr(addr, 0b01);
         return;
     }
-    // mark us used
+    // mark us used completely
     mark2mAsUsed(addr);
 }
 void mark4kAsUsed(uint64_t addr) {
@@ -127,7 +137,9 @@ void mark4kAsUsed(uint64_t addr) {
     // mark it as completely used
     mark128kAsUsed(addr);
 }
+// }}}
 
+// Clearing {{{
 inline void free64m(uint64_t addr) {
     clear64mAddr(addr);
 }
@@ -179,7 +191,9 @@ void free4k(uint64_t addr) {
     // clear above
     free128k(addr);
 }
+// }}}
 
+// marking blocks as used {{{
 void markBlockAsUsedAt4k(uint64_t start, uint64_t size) {
     uint64_t pageAlignedAddr = start & ~((uint64_t)0b111111111111);
     for(; pageAlignedAddr < start + size; pageAlignedAddr += 4*KiB) {
@@ -206,8 +220,278 @@ void markBlockAsUsedAt128k(uint64_t start, uint64_t size) {
         markBlockAsUsedAt4k(low_128k_addr + curr_size, high_size);
     }
 }
-// TODO NOW add this for the other sizes when I wake up
+void markBlockAsUsedAt2m(uint64_t start, uint64_t size) {
+    // if it has too small a size, immediately delegate
+    if (size < 2 * MiB)
+        return markBlockAsUsedAt128k(start, size);
+    // get the low-slice
+    uint64_t low_2m_addr = util::roundUpToPowerOfTwo(start, 2*MiB);
+    uint64_t low_size = low_2m_addr - start;
+    if (low_size != 0)
+        markBlockAsUsedAt128k(start, low_size);
+    // mark out any blocks of our size
+    uint64_t curr_size = 0;
+    for (; curr_size + 2*MiB <= (size - low_size); curr_size += 2*MiB) {
+        mark2mAsUsed(curr_size + low_2m_addr);
+    }
+    // mark out the remaining high-slice
+    uint64_t high_size = size - (curr_size + low_size);
+    if (high_size != 0) {
+        markBlockAsUsedAt128k(low_2m_addr + curr_size, high_size);
+    }
+}
+void markBlockAsUsedAt64m(uint64_t start, uint64_t size) {
+    // if it has too small a size, immediately delegate
+    if (size < 64 * MiB)
+        return markBlockAsUsedAt2m(start, size);
+    // get the low-slice
+    uint64_t low_64m_addr = util::roundUpToPowerOfTwo(start, 64*MiB);
+    uint64_t low_size = low_64m_addr - start;
+    if (low_size != 0)
+        markBlockAsUsedAt2m(start, low_size);
+    // mark out any blocks of our size
+    uint64_t curr_size = 0;
+    for (; curr_size + 64*MiB <= (size - low_size); curr_size += 64*MiB) {
+        mark64mAsUsed(curr_size + low_64m_addr);
+    }
+    // mark out the remaining high-slice
+    uint64_t high_size = size - (curr_size + low_size);
+    if (high_size != 0) {
+        markBlockAsUsedAt2m(low_64m_addr + curr_size, high_size);
+    }
+}
 
+void markBlockAsUsed(uint64_t start, uint64_t size) {
+    markBlockAsUsedAt64m(start, size);
+}
+
+// }}}
+
+// clearing blocks {{{
+void freeBlockAt4k(uint64_t start, uint64_t size) {
+    uint64_t pageAlignedAddr = start & ~((uint64_t)0b111111111111);
+    for(; pageAlignedAddr < start + size; pageAlignedAddr += 4*KiB) {
+        free4k(pageAlignedAddr);
+    }
+}
+void freeBlockAt128k(uint64_t start, uint64_t size) {
+    // if it has too small a size, immediately delegate
+    if (size < 128 * KiB)
+        return freeBlockAt4k(start, size);
+    // get the low-slice
+    uint64_t low_128k_addr = util::roundUpToPowerOfTwo(start, 128*KiB);
+    uint64_t low_size = low_128k_addr - start;
+    if (low_size != 0)
+        freeBlockAt4k(start, low_size);
+    // mark out any blocks of our size
+    uint64_t curr_size = 0;
+    for (; curr_size + 128*KiB <= (size - low_size); curr_size += 128*KiB) {
+        free128k(curr_size + low_128k_addr);
+    }
+    // mark out the remaining high-slice
+    uint64_t high_size = size - (curr_size + low_size);
+    if (high_size != 0) {
+        freeBlockAt4k(low_128k_addr + curr_size, high_size);
+    }
+}
+void freeBlockAt2m(uint64_t start, uint64_t size) {
+    // if it has too small a size, immediately delegate
+    if (size < 2 * MiB)
+        return freeBlockAt128k(start, size);
+    // get the low-slice
+    uint64_t low_2m_addr = util::roundUpToPowerOfTwo(start, 2*MiB);
+    uint64_t low_size = low_2m_addr - start;
+    if (low_size != 0)
+        freeBlockAt128k(start, low_size);
+    // mark out any blocks of our size
+    uint64_t curr_size = 0;
+    for (; curr_size + 2*MiB <= (size - low_size); curr_size += 2*MiB) {
+        free2m(curr_size + low_2m_addr);
+    }
+    // mark out the remaining high-slice
+    uint64_t high_size = size - (curr_size + low_size);
+    if (high_size != 0) {
+        freeBlockAt128k(low_2m_addr + curr_size, high_size);
+    }
+}
+void freeBlockAt64m(uint64_t start, uint64_t size) {
+    // if it has too small a size, immediately delegate
+    if (size < 64 * MiB)
+        return freeBlockAt2m(start, size);
+    // get the low-slice
+    uint64_t low_64m_addr = util::roundUpToPowerOfTwo(start, 64*MiB);
+    uint64_t low_size = low_64m_addr - start;
+    if (low_size != 0)
+        freeBlockAt2m(start, low_size);
+    // mark out any blocks of our size
+    uint64_t curr_size = 0;
+    for (; curr_size + 64*MiB <= (size - low_size); curr_size += 64*MiB) {
+        free64m(curr_size + low_64m_addr);
+    }
+    // mark out the remaining high-slice
+    uint64_t high_size = size - (curr_size + low_size);
+    if (high_size != 0) {
+        freeBlockAt2m(low_64m_addr + curr_size, high_size);
+    }
+}
+// }}}
+
+// finding frees {{{
+
+// returns the index of the first partially free 64m block
+// or -1 if not found
+uint64_t findFirstPartial64mIdx() {
+    // we can check 32 at a time
+    for (uint64_t idx = 0; idx < mapSizes[3]/32; idx++) {
+        uint64_t currBatch = maps[3][idx];
+        // we want a 0 in the high slot
+        currBatch = ~currBatch;
+        // we want a 1 in the high slot
+        if ((currBatch & fully_used_64bits) != 0) {
+            // hit!
+            // where it at
+            uint64_t shiftIdx = 0;
+            while ((0b10 & currBatch) == 0) {
+                shiftIdx += 1;
+                currBatch = currBatch >> 2;
+            }
+            return shiftIdx + idx*32;
+        }
+    }
+    return -1;
+}
+// within the N-th 64-m block, find the first partially free 2m
+// returns the Full (from-start) index
+uint64_t findFirstPartial2mIdxWithin64m(uint64_t idx_64m) {
+    // there are 32 2ms within one 64m, but each 32 takes one uint64_t
+    uint64_t currBatch = maps[2][idx_64m];
+    // we want a 0 in the high slot
+    currBatch = ~currBatch;
+    // we want a 1 in the high slot
+    if ((currBatch & fully_used_64bits) != 0) {
+        // hit!
+        // where it at
+        uint64_t shiftIdx = 0;
+        while ((0b10 & currBatch) == 0) {
+            shiftIdx += 1;
+            currBatch = currBatch >> 2;
+        }
+        return shiftIdx + idx_64m*32;
+    }
+    return -1;
+}
+// within the N-th 64-m block, find the first fully free 2m
+// returns the Full (from-start) index
+uint64_t findFirstFullyFree2mIdxWithin64m(uint64_t idx_64m) {
+    // there are 32 2ms within one 64m, but each 32 takes one uint64_t
+    uint64_t currBatch = maps[2][idx_64m];
+    // we want a 0 in the low slot
+    currBatch = ~currBatch;
+    // we want a 1 in the low slot
+    if ((currBatch & fully_used_64bits) != 0) {
+        // hit!
+        // where it at
+        uint64_t shiftIdx = 0;
+        while ((0b01 & currBatch) == 0) {
+            shiftIdx += 1;
+            currBatch = currBatch >> 2;
+        }
+        return shiftIdx + idx_64m*32;
+    }
+    return -1;
+}
+// within the N-th 2-m block, find the first partially free 128k
+// returns the Full (from-start) index
+uint64_t findFirstPartial128kIdxWithin2m(uint64_t idx_2m) {
+    // there are 16 128ks within one 2m, but each 16 takes one half of a uint64_t
+    uint64_t currBatch = maps[1][idx_2m/2];
+    // handle downshifting
+    if (idx_2m % 2 == 1) {
+        // odd. shift it to low-half
+        currBatch = currBatch >> 32;
+    }
+    // clip the top (mark as fully used)
+    currBatch |= 0xffffffff00000000;
+    // we want a 0 in the high slot
+    currBatch = ~currBatch;
+    // we want a 1 in the high slot
+    if ((currBatch & fully_used_64bits) != 0) {
+        // hit!
+        // where it at
+        uint64_t shiftIdx = 0;
+        while ((0b10 & currBatch) == 0) {
+            shiftIdx += 1;
+            currBatch = currBatch >> 2;
+        }
+        return shiftIdx + idx_2m*16;
+    }
+    return -1;
+}
+// within the N-th 128k block, find the first fully free 4k
+// returns the Full (from-start) index
+uint64_t findFirstFullyFree4kIdxWithin128k(uint64_t idx_128k) {
+    // there are 32 4ks within one 128k, but each 32 takes one uint64_t
+    uint64_t currBatch = maps[0][idx_128k];
+    // we want a 0 in the low slot
+    currBatch = ~currBatch;
+    // we want a 1 in the low slot
+    if ((currBatch & fully_used_64bits) != 0) {
+        // hit!
+        // where it at
+        uint64_t shiftIdx = 0;
+        while ((0b01 & currBatch) == 0) {
+            shiftIdx += 1;
+            currBatch = currBatch >> 2;
+        }
+        return shiftIdx + idx_128k*32;
+    }
+    return -1;
+}
+
+// }}}
+
+// actually allocating {{{
+
+uint64_t allocate2mPage() {
+    // find first partial 64m
+    uint64_t idx_64m = findFirstPartial64mIdx();
+    if (idx_64m == (uint64_t)-1) return -1;
+    uint64_t idx_2m = findFirstFullyFree2mIdxWithin64m(idx_64m);
+    if (idx_2m == (uint64_t)-1) return -1;
+    // we have our page
+    // mark it as Completely Used
+    uint64_t addr = 2*MiB*idx_2m;
+    mark2mAsUsed(addr);
+    return 2*MiB*idx_2m;
+}
+void free2mPage(uint64_t addr) {
+    free2m(addr);
+}
+
+
+uint64_t allocate4kPage() {
+    // find first partial 64m
+    uint64_t idx_64m = findFirstPartial64mIdx();
+    if (idx_64m == (uint64_t)-1) return -1;
+    uint64_t idx_2m = findFirstPartial2mIdxWithin64m(idx_64m);
+    if (idx_2m == (uint64_t)-1) return -1;
+    uint64_t idx_128k = findFirstPartial128kIdxWithin2m(idx_2m);
+    if (idx_128k == (uint64_t)-1) return -1;
+    uint64_t idx_4k = findFirstFullyFree4kIdxWithin128k(idx_128k);
+    if (idx_4k == (uint64_t)-1) return -1;
+    // mark as used
+    uint64_t addr = 4*KiB*idx_4k;
+    mark4kAsUsed(addr);
+    return 4*KiB*idx_4k;
+}
+void free4kPage(uint64_t addr) {
+    free4k(addr);
+}
+
+// }}}
+
+// TODO: include the dirty low stuff too, we can use that if we want to
+// TODO: but make sure to clean it + mark stuff out that we can't use
 void initPhysAllocator() {
     uint64_t kernel_virt_end = 0xffffe00000000000 + (uint64_t) &_kernel_phys_end;
     // how big will the bitmaps need to be?
@@ -216,6 +500,8 @@ void initPhysAllocator() {
     for (uint64_t sect : sectSizes) {
         mapSize += util::ceilDiv(memSize, sect);
     }
+    graphics::psf::print("Memory is: ");
+    util::printAsHex(memSize);
     // mapSize is now one byte for every bitmap entry
     mapSize = util::ceilDiv(mapSize, 4);
 
@@ -258,13 +544,24 @@ void initPhysAllocator() {
     markBlockAsUsedAt4k((uint64_t)&_kernel_phys_start, (uint64_t)&_kernel_phys_end - (uint64_t)&_kernel_phys_start);
     // we also got these maps, and kargs
     markBlockAsUsedAt4k((uint64_t)kargs - 0xffffe00000000000, kargs->totalSize);
-    markBlockAsUsedAt4k((uint64_t)maps[0], mapSize);
+    markBlockAsUsedAt4k((uint64_t)&maps[0] - 0xffffe00000000000, mapSize);
+
+    uint64_t last_high = 0;
+
+    // also fill out the used stuff from the memmap itself
+    for(uint64_t i = 0; i < memory::memMapLen; i++) {
+        // mark from last to current if it's not accounted for
+        if (memory::memMap[i].start != last_high) {
+            markBlockAsUsed(last_high, memMap[i].start - last_high);
+        }
+        // mark current segment
+        if (memMap[i].type == Kernel) {
+            markBlockAsUsed(memMap[i].start, memMap[i].len);
+        }
+        last_high = memMap[i].start + memMap[i].len;
+    }
 
     // done!
-}
-
-void markBlockAsUsed() {
-
 }
 
 }

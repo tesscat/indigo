@@ -1,5 +1,4 @@
 #include "graphics/psf.hpp"
-#include "libstd/merge_sort.hpp"
 #include "loader/memory_descriptor.hpp"
 #include <cstdint>
 #include <memory/system_map.hpp>

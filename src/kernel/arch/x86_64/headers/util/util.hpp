@@ -1,7 +1,10 @@
 #ifndef KERNEL_UTIL_UTIL_HPP
 #define KERNEL_UTIL_UTIL_HPP
 
+#include "graphics/psf.hpp"
 #include <stdint.h>
+
+#include <libstd/itoa.hpp>
 
 namespace util {
 
@@ -39,6 +42,16 @@ inline uint64_t roundUpToPowerOfTwo(uint64_t numToRound, uint64_t multipleToRoun
         return roundUp(numToRound, multipleToRoundTo);
     return (numToRound + multipleToRoundTo - 1) & (-multipleToRoundTo);
 }
+
+inline void printAsHex(int n, int l = 16) {
+    char sp[16];
+    int f = itoa(n, sp, 16);
+    sp[f] = '\0';
+    graphics::psf::print("0x");
+    for (int j = 0; j < (l-f); j++) graphics::psf::print("0");
+    graphics::psf::print(sp);
+}
+
 }
 
 #endif // !KERNEL_UTIL_UTIL_HPP
