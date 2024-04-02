@@ -1,9 +1,9 @@
 #include <kernel.hpp>
-#include <stdint.h>
 #define _STDINT_H
 #include <vec_efi/vec_efi.hpp>
 #include <uefi.h>
 #include <file.hpp>
+#include <acpi.hpp>
 #include <ion_efi/ion_efi.hpp>
 
 void error(size_t loc, const char* message) {
@@ -12,6 +12,10 @@ void error(size_t loc, const char* message) {
 }
 
 extern "C" int main(int argc, char** argv) {
+    // find the ACPI tables
+    // initAcpiTables();
+    
+
     char* data = readFile("root.ion");
     if (data == NULL) {
         printf("Unable to load root.ion");
