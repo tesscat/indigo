@@ -47,7 +47,7 @@ void setPageMapPerms(memory::PageEntryBase* entry) {
     entry->present = true;
     entry->rw = true;
     entry->allAccessible = false; // TODO: check
-    entry->writeThrough = true; // TODO: check this and below
+    entry->writeThrough = false; // TODO: check this and below
     entry->cacheDisabled = false;
     entry->bigPage = false;
     entry->disableExecute = true;
@@ -58,23 +58,21 @@ void setFullPermsAndPresent(memory::PageEntryBase* entry) {
     entry->present = true;
     entry->rw = true;
     entry->allAccessible = true; // TODO: check
-    entry->writeThrough = true; // TODO: check this and below
+    entry->writeThrough = false; // TODO: check this and below
     entry->cacheDisabled = false;
     entry->bigPage = false;
     entry->disableExecute = false;
     entry->availableBit_orGlobal = false;
 }
 
-void setRecursiveMapping(memory::PageEntryBase* table) {
-    setPageMapPerms(&table[511]);
-    table[511].setAddr((uint64_t) table);
-}
+// void setRecursiveMapping(memory::PageEntryBase* table) {
+//     setPageMapPerms(&table[511]);
+//     table[511].setAddr((uint64_t) table);
+// }
 
 extern "C" void enablePaging(uint64_t addr);
 
 extern "C" void returnTo() {
-    fb[0] = 0xffff00ff;
-    
     void (* __attribute__((sysv_abi)) kEntryFn)(KernelArgs*);
     kEntryFn = (void (* __attribute__((sysv_abi)))(KernelArgs*))kEntry;
 
@@ -131,11 +129,11 @@ extern "C" void _start(KernelArgs* args, uint64_t kEntryVAddr) {
     memory::PageMapL4* pageMapTL = (memory::PageMapL4*) nextFreeMem;
     nextFreeMem += 512*sizeof(memory::PageMapL4);
     // the top one is unusable, since we need to recursively map it.
-    setRecursiveMapping(pageMapTL);
+    // setRecursiveMapping(pageMapTL);
 
     // we are hardly using any of this stuff lol
-    // just top + bottom entry
-    for(int i = 1; i < 511; i++) {
+    // just bottom entry
+    for(int i = 1; i < 512; i++) {
         // pageMapTL[i].present = false;
         pageMapTL[i].clear();
     }
@@ -147,7 +145,7 @@ extern "C" void _start(KernelArgs* args, uint64_t kEntryVAddr) {
     nextFreeMem += 512*sizeof(memory::PageDirPointer);
 
     // recursive mapping
-    setRecursiveMapping(pageMapLowPDPD);
+    // setRecursiveMapping(pageMapLowPDPD);
     
     // bind the table
     // it resolves to the most restrictive perms, so as long as we set them on the lower levels we can use full perms higher up
@@ -156,7 +154,7 @@ extern "C" void _start(KernelArgs* args, uint64_t kEntryVAddr) {
     
 
     // again we are hardly using any of this
-    for(int i = 1; i < 511; i++) {
+    for(int i = 1; i < 512; i++) {
         // pageMapLowPDPD[i].present = false;
         pageMapLowPDPD[i].clear();
     }
@@ -167,7 +165,7 @@ extern "C" void _start(KernelArgs* args, uint64_t kEntryVAddr) {
     nextFreeMem += 512*sizeof(memory::PageDirEntry);
 
     // recursive mapping
-    setRecursiveMapping(pageDir);
+    // setRecursiveMapping(pageDir);
 
     // identity map 0 -> 32mb -> tramp_end
     uint64_t tramp_size = (uint64_t)&_tramp_end - (uint64_t)&_tramp_start;
@@ -196,11 +194,11 @@ extern "C" void _start(KernelArgs* args, uint64_t kEntryVAddr) {
     memory::PageDirPointer* kernelPDP = (memory::PageDirPointer*) nextFreeMem;
     nextFreeMem += 512*sizeof(memory::PageDirPointer);
 
-    setRecursiveMapping(kernelPDP);
+    // setRecursiveMapping(kernelPDP);
 
     // this does mean if we try to access high kernel memory we will simply Run Out of RAM so we gotta be careful
     // user processes _should_ permission error tho so we good on that
-    for (int i = 0; i < 511; i++) {
+    for (int i = 0; i < 512; i++) {
         // kernel perms
         kernelPDP[i].present = true;
         kernelPDP[i].rw = true;
@@ -208,8 +206,8 @@ extern "C" void _start(KernelArgs* args, uint64_t kEntryVAddr) {
         kernelPDP[i].writeThrough = true;
         kernelPDP[i].cacheDisabled = false;
         kernelPDP[i].bigPage = true;
-        // we can set global, since kernel is going to be mapped in the same place regardless of the user process
-        kernelPDP[i].availableBit_orGlobal = true;
+        // don't set global since this table will be overwritten
+        kernelPDP[i].availableBit_orGlobal = false;
         // we mapping the GiBs, remember
         kernelPDP[i].setAddr(i * (1024 * 1024 * 1024));
         kernelPDP[i].disableExecute = false;
@@ -234,12 +232,12 @@ extern "C" void _start(KernelArgs* args, uint64_t kEntryVAddr) {
         // there is approximately No Way it's in kernel space
         gopPDPD = (memory::PageDirPointer*) nextFreeMem;
         nextFreeMem += 512*sizeof(memory::PageDirPointer);
-        setRecursiveMapping(gopPDPD);
+        // setRecursiveMapping(gopPDPD);
 
         setFullPermsAndPresent(&pageMapTL[fb_pml4_idx]);
         pageMapTL[fb_pml4_idx].setAddr((uint64_t) gopPDPD);
 
-        for (int i = 0; i < 511; i++) {
+        for (int i = 0; i < 512; i++) {
             // gopPDPD[i].present = false;
             gopPDPD[i].clear();
         }
@@ -253,12 +251,12 @@ extern "C" void _start(KernelArgs* args, uint64_t kEntryVAddr) {
     } else {
         gopPDE = (memory::PageDirPointer*) nextFreeMem;
         nextFreeMem += 512*sizeof(memory::PageDirEntry);
-        setRecursiveMapping(gopPDE);
+        // setRecursiveMapping(gopPDE);
 
         setFullPermsAndPresent(&gopPDPD[fb_pdp_idx]);
         gopPDPD[fb_pdp_idx].setAddr((uint64_t) gopPDE);
 
-        for (int i = 0; i < 511; i++) {
+        for (int i = 0; i < 512; i++) {
             // gopPDE[i].present = false;
             gopPDE[i].clear();
         }

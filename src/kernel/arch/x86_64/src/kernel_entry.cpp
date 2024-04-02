@@ -1,4 +1,5 @@
 #include "libstd/merge_sort.hpp"
+#include "memory/page_alloc.hpp"
 #include "memory/system_map.hpp"
 #include <graphics/psf.hpp>
 #include <graphics/screen.hpp>
@@ -9,6 +10,7 @@
 
 KernelArgs* kargs;
 
+#ifdef DEBUG_OUTPUT
 const char* mNames[] = {
     "ReservedMemoryType",
     "LoaderCode",
@@ -28,8 +30,9 @@ const char* mNames[] = {
     "UnacceptedMemoryType",
     "MaxMemoryType"
 };
+#endif
 
-extern "C" void _start(KernelArgs* args) {
+extern "C" void kernel_start(KernelArgs* args) {
     kargs = args;
     graphics::psf::initPSF();
     graphics::screen::initScreen();
@@ -93,26 +96,7 @@ extern "C" void _start(KernelArgs* args) {
 
     memory::initPhysAllocator();
 
-    for (int i = 0; i < 8; i++) {
-        uint64_t addr = memory::allocate4kPage();
-        graphics::psf::print("\nAllocated 4k, got ");
-        util::printAsHex(addr);
-    }
-
-    graphics::psf::print("\nFreeing 0x1000, 0x3000, 0x5000\n");
-    memory::free4kPage(0x1000);
-    memory::free4kPage(0x3000);
-    memory::free4kPage(0x5000);
-    for (int i = 0; i < 8; i++) {
-        uint64_t addr = memory::allocate4kPage();
-        graphics::psf::print("\nAllocated 4k, got ");
-        util::printAsHex(addr);
-    }
-    for (int i = 0; i < 8; i++) {
-        uint64_t addr = memory::allocate2mPage();
-        graphics::psf::print("\nAllocated 2m, got ");
-        util::printAsHex(addr);
-    }
+    memory::initPageAllocator();
 
     loop_forever;
 }

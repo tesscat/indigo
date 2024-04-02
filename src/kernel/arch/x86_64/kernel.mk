@@ -31,6 +31,10 @@ $(BUILD_DIR)/$(KERNEL_NAME)/%.o: $(SRC_DIR)/$(KERNEL_NAME)/%.cpp
 	mkdir -p $(shell dirname $@)
 	$(CPPC) $(BASE_FLAGS) -mcmodel=large -fno-stack-protector -fno-stack-check $(INC_FLAGS) -c $< -o $@
 
+$(BUILD_DIR)/$(KERNEL_NAME)/%.o: $(SRC_DIR)/$(KERNEL_NAME)/%.s
+	mkdir -p $(shell dirname $@)
+	$(NASM) $(NASM_FLAGS) $^ -o $@
+
 $(OUT_DIR)/$(KERNEL_NAME): $(KERNEL_OBJS)
 	mkdir -p $(shell dirname $@)
 	$(LD) $(LD_FLAGS) -z max-page-size=0x1000 -T $(KERNEL_ARCH_DIR)/kernel.ld $^ -o $@

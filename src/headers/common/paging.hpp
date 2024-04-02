@@ -5,6 +5,21 @@
 
 namespace memory {
 
+// paging flags
+#define PAGE_PRESENT (1)
+#define PAGE_READ_WRITE (1<<1)
+#define PAGE_ALL_ACCESSIBLE (1<<2)
+#define PAGE_WRITE_THROUGH (1<<3)
+#define PAGE_CACHE_DISABLE (1<<4)
+#define PAGE_ACCESSED (1<<5)
+#define PAGE_DIRTY (1<<6)
+#define PAGE_BIG_PAGE (1<<7)
+#define PAGE_GLOBAL (1<<8)
+#define PAGE_DISABLE_EXECUTE ((uint64_t)1<<63)
+
+// kernel data
+#define KERNEL_OFFSET ((uint64_t)0xffffe00000000000)
+
 // The template for the higher-order entries
 struct PageEntryBase {
     // is this present in physical memory (ie if not we raise a page fault)
@@ -42,7 +57,23 @@ struct PageEntryBase {
     inline void clear() {
         *((uint64_t*)this) = 0;
     }
+    // returns the physical addr specified by addr
+    // handles the bitshifting
+    inline uint64_t expandAddr() {
+        return (addr << 12);
+    }
+    void setPageMapPerms() {
+        this->present = true;
+        this->rw = true;
+        this->allAccessible = false; // TODO: check
+        this->writeThrough = false; // TODO: check this and below
+        this->cacheDisabled = false;
+        this->bigPage = false;
+        this->disableExecute = true;
+        this->availableBit_orGlobal = false;
+    }
 } __attribute__((__packed__));
+
 
 // highest level, points to PageDirPointer[512], one of these is 512gb
 using PageMapL4 = PageEntryBase;
@@ -50,6 +81,9 @@ using PageMapL4 = PageEntryBase;
 using PageDirPointer = PageEntryBase;
 // third level, points to PageTableEntry[512], one of these is 2 MiB
 using PageDirEntry = PageEntryBase;
+
+// The highest map itself.
+using PageMap = PageMapL4*;
 
 // The lowest-level one, this points to the actual RAM
 struct PageTableEntry {
@@ -88,6 +122,15 @@ struct PageTableEntry {
     inline void clear() {
         *((uint64_t*)this) = 0;
     }
+    void setPageMapPerms() {
+        this->present = true;
+        this->rw = true;
+        this->allAccessible = false; // TODO: check
+        this->writeThrough = false; // TODO: check this and below
+        this->cacheDisabled = false;
+        this->disableExecute = true;
+        this->global = false;
+    }
 } __attribute__((__packed__));
 
 #define PML4_IDXOF(addr) (((addr) >> 39) & 511)
@@ -95,6 +138,10 @@ struct PageTableEntry {
 #define PDE_IDXOF(addr) (((addr) >> 21) & 511)
 #define PTE_IDXOF(addr) (((addr) >> 12) & 511)
 
+
+inline void lcr3(uint64_t val) {
+    asm volatile("movq %0,%%cr3" : : "r" (val));
+}
 }
 
 #endif // !KERNEL_MEMORY_PAGING_HPP

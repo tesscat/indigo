@@ -12,6 +12,7 @@ SECTIONS
     _kernel_phys_start = .;
 
     . += 0xffffe00000000000;
+    _kernel_virt_start = .;
     /* Add a symbol that indicates the start address of the kernel. */
     .text ALIGN (4K): AT (ADDR (.text) - 0xffffe00000000000)
     {
@@ -33,5 +34,6 @@ SECTIONS
         *(.bootstrap_stack)
     }
     /* Add a symbol that indicates the end address of the kernel. */
+    _kernel_virt_end = .;
     _kernel_phys_end = . - 0xffffe00000000000;
 }

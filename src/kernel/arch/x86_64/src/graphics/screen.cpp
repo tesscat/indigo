@@ -4,6 +4,7 @@
 
 namespace graphics::screen {
 uint32_t* backBuffer;
+uint64_t backBufferEnd;
 
 // TODO: rewrite when we have kernel malloc()
 void initScreen() {
@@ -23,7 +24,7 @@ void initScreen() {
     uint64_t i = 0;
     bool works = true;
 
-    for (i = 0; i < 2; i++) {
+    for (i = 0; i < 1; i++) {
         uint64_t startPtr = candidates[i];
         uint64_t endPtr = startPtr + (sizeof(uint32_t) * kargs->fbWidth * kargs->fbHeight);
         works = true;
@@ -40,6 +41,7 @@ void initScreen() {
 
     if (works) {
         backBuffer = (uint32_t*) candidates[i];
+        backBufferEnd = candidates[i] + sizeof(uint32_t)*kargs->fbWidth*kargs->fbHeight;
         // graphics::psf::putchar('1' + i, 10, 10, 0x00FFFFFF, 0x00000000);
         // while(1);
     } else {

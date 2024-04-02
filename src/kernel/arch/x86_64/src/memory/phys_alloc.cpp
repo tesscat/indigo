@@ -17,6 +17,7 @@
 
 #include <cstdint>
 #include <memory/system_map.hpp>
+#include <memory/phys_alloc.hpp>
 #include <util/util.hpp>
 #include <entry.hpp>
 
@@ -540,6 +541,13 @@ void initPhysAllocator() {
             maps[i][j] = 0;
         }
     }
+
+    // mark the lowest 4k as used, for various reasons:
+    // - low memory is dodgy, QEMU doesn't like it either so we prevent us using it
+    // - in case we need anything in the future that is Absolutely Guaranteed to be free
+    // - so we can use 0 as "non-existent" marker in various things
+    markBlockAsUsedAt4k(0, 4*KiB - 1);
+
     // okay what my kernel look like
     markBlockAsUsedAt4k((uint64_t)&_kernel_phys_start, (uint64_t)&_kernel_phys_end - (uint64_t)&_kernel_phys_start);
     // we also got these maps, and kargs
@@ -560,6 +568,7 @@ void initPhysAllocator() {
         }
         last_high = memMap[i].start + memMap[i].len;
     }
+
 
     // done!
 }
