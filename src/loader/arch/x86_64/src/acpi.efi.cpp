@@ -52,7 +52,7 @@ struct APIC_t {
     APICSubHeader_t additionalData[];
 } __attribute__ ((packed));
 
-void countCPUs() {
+unsigned int countCpus() {
     // find the APIC
     APIC_t* apic = (APIC_t*) findTableInXSDT("APIC");
     if (!apic) {
@@ -75,9 +75,9 @@ void countCPUs() {
         // TODO: why does /2 make it work?
         curr += rL/2;
     }
+
+    return n_cpus;
     
-    printf("Found %d cpus", n_cpus);
-    while(1);
 }
 
 void initAcpiTables() {
@@ -115,6 +115,4 @@ void initAcpiTables() {
     //     printf("\nFound ");
     //     printf(buff);
     // }
-
-    countCPUs();
 }

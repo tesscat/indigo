@@ -1,3 +1,4 @@
+#include "apic/pic.hpp"
 #include "libstd/merge_sort.hpp"
 #include "memory/page_alloc.hpp"
 #include "memory/system_map.hpp"
@@ -98,5 +99,10 @@ extern "C" void kernel_start(KernelArgs* args) {
 
     memory::initPageAllocator();
 
-    loop_forever;
+    apic::pic::disablePic();
+
+    memory::kernelMap4KiBBlock(0xBEEF000);
+
+
+    unimplemented();
 }

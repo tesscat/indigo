@@ -1,3 +1,4 @@
+#include "acpi.hpp"
 #include "loader/memory_descriptor.hpp"
 #include "memmap.hpp"
 #include <stdint.h>
@@ -9,6 +10,8 @@
 #include <kernel.hpp>
 #include <loader/kernel_args.hpp>
 #include <graphics.hpp>
+
+extern XSDT_t *xsdt;
 
 Kernel::Kernel(const char* path, ion::RootNode* root, const char* trampPath) {
     // load us up on kernel
@@ -90,7 +93,7 @@ void Kernel::Run(size_t argc, char** argv) {
         // plus null-termi
         size += strlen(argv[i]) + 1;
     }
-
+    
     // handle the memmap first
     size_t mmapOrigSize = getMemmapSize();
     // TODO: acc figure this line out. since it's not 8, and one memory alloc isn't the size of efi_memory_descriptor_t
@@ -112,6 +115,11 @@ void Kernel::Run(size_t argc, char** argv) {
     // turns out we cheatin. just chuck it a bit above the kernel
     KernelArgs* args = (KernelArgs*) kArgsAddr;
     args->totalSize = size;
+
+    // count CPUS
+    args->n_cpus = countCpus();
+    // xsdt pointer
+    args->xsdt = xsdt;
 
     // do the graphics
     FramebufferDescriptor fb = gopSetup();

@@ -1,6 +1,3 @@
 [submodule "vendor/posix-uefi"]
 	path = vendor/posix-uefi
 	url = https://gitlab.com/bztsrc/posix-uefi
-[submodule "vendor/lai"]
-	path = vendor/lai
-	url = https://github.com/managarm/lai

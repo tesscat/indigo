@@ -13,6 +13,14 @@ namespace util {
 
 #define loop_forever {__asm__ __volatile__ ("hlt"); while(1);}
 
+#define __COMPTIME_STRINGIFY(X) __COMPTIME_STRINGIFY2(X)
+#define __COMPTIME_STRINGIFY2(X) #X
+#define panic(msg) util::_panic(msg, __FILE__, __COMPTIME_STRINGIFY(__LINE__), __PRETTY_FUNCTION__);
+
+#define unimplemented() panic("UNIMPLEMENTED")
+
+[[noreturn]] void _panic(const char* msg, const char* file, const char* line, const char* func) noexcept;
+
 // returns ceil(a/b)
 inline uint64_t ceilDiv(uint64_t a, uint64_t b) {
     return (a + b - 1)/b;

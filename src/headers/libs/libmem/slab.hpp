@@ -4,24 +4,25 @@
 #include <stdint.h>
 
 namespace libmem {
-template<typename T, uint64_t elements>
+template<typename T>
 class SlabAllocator {
     T* values = nullptr;
     // round-up
-    uint64_t bitmaps[(elements+63)/64];
+    uint64_t* bitmaps;
+    uint64_t elements;
 public:
-    SlabAllocator() {
-        // unmark everything
+    SlabAllocator() {}
+    SlabAllocator(T* memory, uint64_t elements_) : elements{elements_}, values {memory} {
+        // we need to put the bitmaps into space <size> too
+        // we assume that someone else has done the math, and it all fits in
+        // put bitmaps high up in case T requires alignment
+        bitmaps = (uint64_t*)memory[elements];
         for (uint64_t i = 0; i < elements; i++) {
             bitmaps[i] = 0;
         }
     }
-    void SetMemoryAddr(uint64_t values_) {
-        values = (T*)values_;
-    }
+
     void Free(T* element) {
-        // destroy the element if we have a dtor
-        element->~T();
         // zero the bitmap
         uint64_t loc = (element - values)/sizeof(T);
         uint64_t idx = loc/64;
@@ -42,12 +43,11 @@ public:
         }
         if (!found) return nullptr;
         uint64_t elem = bitmaps[idx];
-        uint64_t offs = __builtin_ffs(elem) - 1;
+        uint64_t offs = __builtin_ffs(~elem) - 1;
         uint64_t loc = idx*64 + offs;
         if (loc >= elements) return nullptr;
         bitmaps[idx] |= (1 << offs);
-        T* element = values[idx*64 + offs];
-        element->T();
+        T* element = &values[idx*64 + offs];
         return element;
     }
 };

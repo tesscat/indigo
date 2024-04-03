@@ -84,6 +84,8 @@ using PageDirEntry = PageEntryBase;
 
 // The highest map itself.
 using PageMap = PageMapL4*;
+// just any table
+using PageTable = PageEntryBase[512];
 
 // The lowest-level one, this points to the actual RAM
 struct PageTableEntry {

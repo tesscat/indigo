@@ -4,6 +4,7 @@
 #include <uefi.h>
 
 void initAcpiTables();
+unsigned int countCpus();
 
 // https://wiki.osdev.org/RSDP
 struct XSDP_t {
