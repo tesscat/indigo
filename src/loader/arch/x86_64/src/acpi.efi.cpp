@@ -31,7 +31,7 @@ bool isAcpiGuid(efi_guid_t guid) {
 XSDT_t *xsdt;
 uint64_t xsdt_entries;
 
-void* findTableInXSDT(char sig[4]) {
+void* findTableInXSDT(const char sig[4]) {
     for (int i = 0; i < xsdt_entries; i++) {
         ACPIHeader_t* header = (ACPIHeader_t*)xsdt->entries[i];
         if (memcmp(header->Signature, sig, 4) == 0)

@@ -1,4 +1,5 @@
 #include "memory/page_alloc.hpp"
+#include "libmem/slab.hpp"
 #include "loader/kernel_args.hpp"
 #include "paging.hpp"
 #include "util/util.hpp"
@@ -13,8 +14,6 @@ extern uint64_t backBufferEnd;
 }
 
 namespace memory {
-
-// TODO: add support for mixing 2MiB pages in
 
 // Note for when I get around to writing the slab allocator since we
 // don't ID-page the entire space:
@@ -102,6 +101,8 @@ uint8_t* kpage_map_scratch;
 uint8_t* paging_scratch;
 uint64_t used_blocks;
 
+libmem::SlabAllocator<uint8_t[4*KiB], 16> slab;
+
 uint64_t onetime_allocator() {
     used_blocks++;
     return (uint64_t)(kpage_map_scratch) + (4*KiB)*(used_blocks-1);
@@ -163,5 +164,8 @@ void initPageAllocator() {
     // let-sa try it!
     lcr3((uint64_t)map - KERNEL_OFFSET);
     graphics::psf::print("\nWOOOOOO\n");
+
+    uint64_t new_scratch = (uint64_t)initial_paging_scratch + 4*KiB*used_blocks;
+    slab.SetMemoryAddr(new_scratch);
 }
 }
