@@ -67,9 +67,16 @@ $(OUT_DIR)/$(PROJECT).bin: $(BUILD_DIR)/$(PROJECT).bin
 
 # ifdef $(DEBUG)
 # Run (verbose debug)
+
+QEMU_ARGS := -m 2G -s -S -bios /usr/share/edk2-ovmf/x64/OVMF.fd -net none -monitor stdio -d int,guest_errors -no-reboot -no-shutdown -smp 2
+
 run_dbg: $(OUT_DIR)/$(PROJECT).bin
-	kitty qemu-system-$(ARCH) -m 2G -s -S -bios /usr/share/edk2-ovmf/x64/OVMF.fd -net none -drive file=$(shell pwd)/$^,format=raw -monitor stdio -d int,guest_errors -no-reboot -no-shutdown &
+	kitty qemu-system-$(ARCH) $(QEMU_ARGS) -drive file=$(shell pwd)/$^,format=raw &
 	lldb $(OUT_DIR)/kernel $(OUT_DIR)/trampoline $(OUT_DIR)/$(LOADER_NAME).efi -o 'gdb-remote localhost:1234'
+
+run_dbg_loader: $(OUT_DIR)/$(PROJECT).bin
+	kitty qemu-system-$(ARCH) -m 2G -s -S -bios /usr/share/edk2-ovmf/x64/OVMF.fd -net none -drive file=$(shell pwd)/$^,format=raw -monitor stdio -d int,guest_errors -no-reboot -no-shutdown &
+	lldb $(OUT_DIR)/$(LOADER_NAME).efi -o 'gdb-remote localhost:1234'
 
 # Run (normal)
 run: $(OUT_DIR)/$(PROJECT).bin
