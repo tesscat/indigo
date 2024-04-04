@@ -102,7 +102,8 @@ extern "C" void kernel_start(KernelArgs* args) {
     apic::pic::disablePic();
 
     memory::kernelMap4KiBBlock(0xBEEF000);
-
+    *(uint64_t*)(0xBEEF000) = 3;
+    memory::kernelUnmap4KiBBlock(0xBEEF000);
 
     unimplemented();
 }

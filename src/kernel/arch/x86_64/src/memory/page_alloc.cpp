@@ -96,9 +96,7 @@ PageTableEntry* map4KiB(PageMap map, uint64_t virtAddr, uint64_t physAddr, uint6
     return pte;
 }
 
-uint8_t* initial_paging_scratch;
-uint8_t* kpage_map_scratch;
-uint64_t used_blocks;
+// uint64_t used_blocks;
 PageMapL4* kpgtable;
 
 libmem::SlabAllocator<PageTable> slab;
@@ -111,9 +109,16 @@ libmem::SlabAllocator<PageTable> slab;
 // // and some scratch space to set it up
 // uint8_t initial_temp_scratch[2*KiB];
 
-uint64_t onetime_allocator() {
-    used_blocks++;
-    return (uint64_t)(kpage_map_scratch) + (4*KiB)*(used_blocks-1);
+// uint64_t slab_allocator() {
+//     used_blocks++;
+//     return (uint64_t)(kpage_map_scratch) + (4*KiB)*(used_blocks-1);
+// }
+
+uint64_t slab_allocator() {
+    uint64_t addr = (uint64_t)slab.Alloc();
+    if (addr == 0)
+        panic("Kernel paging slab out of memory");
+    return addr;
 }
 
 extern "C" char _kernel_virt_start;
@@ -122,12 +127,15 @@ extern "C" char _kernel_virt_end;
 
 void initPageAllocator() {
     // we need to pick an address for the initial paging scratch
-    initial_paging_scratch = (uint8_t*) allocate2mPage();
+    uint8_t* initial_paging_scratch = (uint8_t*) allocate2mPage();
+    // give this to the slab alloc
+    // 511 is a bit of a guess, ideally we'd have the slab alloc solve for the maximum it can fit
+    // TODO: have slab solve for how much to allocate for the bitmap
+    slab = libmem::SlabAllocator<PageTable>((PageTable*)initial_paging_scratch, 511);
     // Okay turns out we need to make a kpgtable now, since the trampoline one 
     // will probably be overwritten, since we don't block it out in the phys_alloc
     // find a 4kb aligned addr in initial_paging_scratch
-    kpgtable = (PageMapL4*)initial_paging_scratch;
-    kpage_map_scratch = (uint8_t*)kpgtable;
+    kpgtable = (PageMapL4*)slab.Alloc();
     // clear the map
     for (int i = 0; i < 512; i++) {
         kpgtable[i].clear();
@@ -139,21 +147,21 @@ void initPageAllocator() {
     uint64_t curr_end_addr = util::roundUpToPowerOfTwo(graphics::screen::backBufferEnd, 4*KiB);
 
     // set up allocator for the locateOrAllocates
-    used_blocks = 1;
+    // used_blocks = 1;
 
     
     // try and first map 2MiB blocks
     // TODO: should this be <= or <
     //
     while (curr_start_addr + 2*MiB <= curr_end_addr) {
-        map2MiB<onetime_allocator>(kpgtable, curr_start_addr, curr_start_addr - KERNEL_OFFSET);
+        map2MiB<slab_allocator>(kpgtable, curr_start_addr, curr_start_addr - KERNEL_OFFSET);
         curr_start_addr += 2*MiB;
     }
 
     // map the remainder as 4KiB
     // < since on last iter they should be set to equal
     while (curr_start_addr < curr_end_addr) {
-        map4KiB<onetime_allocator>(kpgtable, curr_start_addr, curr_start_addr - KERNEL_OFFSET);
+        map4KiB<slab_allocator>(kpgtable, curr_start_addr, curr_start_addr - KERNEL_OFFSET);
         curr_start_addr += 4*KiB;
     }
 
@@ -162,28 +170,16 @@ void initPageAllocator() {
     curr_end_addr = util::roundUpToPowerOfTwo(((uint64_t)kargs->framebuffer + (kargs->fbPitch * kargs->fbHeight)*sizeof(uint32_t)), 4*KiB);
     // do the same 2MiB/4KiB split
     while (curr_start_addr + 2*MiB <= curr_end_addr) {
-        map2MiB<onetime_allocator>(kpgtable, curr_start_addr, curr_start_addr);
+        map2MiB<slab_allocator>(kpgtable, curr_start_addr, curr_start_addr);
         curr_start_addr += 2*MiB;
     }
     while (curr_start_addr < curr_end_addr) {
-        map4KiB<onetime_allocator>(kpgtable, curr_start_addr, curr_start_addr);
+        map4KiB<slab_allocator>(kpgtable, curr_start_addr, curr_start_addr);
         curr_start_addr += 4*KiB;
     }
     
     // identity map the chosen scratch buffer
-    map2MiB<onetime_allocator>(kpgtable, (uint64_t)initial_paging_scratch, (uint64_t)initial_paging_scratch);
-
-    // we must never again use onetime_allocator
-    // the tables we just allocated won't ever be freed
-    // which is chill, they're kernel mappings
-    // if the _kernel_ needs to temporatily map a thing, we have a slab alloc here for that
-    kpage_map_scratch += sizeof(PageTable) * used_blocks;
-    // the elements is a bit of a guessing game
-    // we can fit 512 PageTables in the 2MiB block, i doubt we're going to use more than 50 to map the kernel
-    // and everything else, and we also need space for the bitmaps to go,
-    // so I guess we choose 300?
-    // TODO: actually solve this problem
-    slab = libmem::SlabAllocator<PageTable>((PageTable*)kpage_map_scratch, 300);
+    map2MiB<slab_allocator>(kpgtable, (uint64_t)initial_paging_scratch, (uint64_t)initial_paging_scratch);
 
     // we should (??) be good
     // let-sa try it!
@@ -194,13 +190,6 @@ void initPageAllocator() {
 
 }
 
-uint64_t slab_allocator() {
-    graphics::psf::print("SA hit\n");
-    uint64_t addr = (uint64_t)slab.Alloc();
-    if (addr == 0)
-        panic("Kernel paging slab out of memory");
-    return addr;
-}
 
 // Attempts to identity-map the 4KiB of memory starting at round-down physAddr
 void kernelMap4KiBBlock(uint64_t physAddr) {
@@ -211,6 +200,48 @@ void kernelMap4KiBBlock(uint64_t physAddr) {
     map4KiB<slab_allocator>(kpgtable, (uint64_t)physAddr, (uint64_t)physAddr);
     lcr3((uint64_t)kpgtable);
 }
+
+// TODO: do the funky SIMD on this
+// TODO: set up proper exists/non-exists criteria
+inline bool isTableEmpty(PageEntryBase* arr) {
+    for (int i = 0; i < 511; i++) {
+        if (*(uint64_t*)&arr[i] != 0) return false;
+    }
+    return true;
+}
+
+
+// Unmaps memory previously set by KM4KiBBlock
+// this is a bit more complex, since we need to track the tables all the way down + check if they empty
+void kernelUnmap4KiBBlock(uint64_t physAddr) {
+    PageMapL4* l4 = &kpgtable[PML4_IDXOF(physAddr)];
+    PageDirPointer* l3_arr = (PageDirPointer*) l4->expandAddr();
+    if (l3_arr == nullptr) return;
+    PageDirPointer* l3 = &l3_arr[PDP_IDXOF(physAddr)];
+    PageDirEntry* l2_arr = (PageDirEntry*) l3->expandAddr();
+    if (l2_arr == nullptr) return;
+    PageDirEntry* l2 = &l2_arr[PDE_IDXOF(physAddr)];
+    PageTableEntry* l1_arr = (PageTableEntry*) l2->expandAddr();
+    if (l1_arr == nullptr) return;
+    PageTableEntry* l1 = &l1_arr[PTE_IDXOF(physAddr)];
+    // clear l1
+    l1->clear();
+    // TODO: TLB shootdowns
+    __asm__ volatile ("invlpg %0" : : "rm"(physAddr));
+    // is all of l1_arr free?
+    if (!isTableEmpty((PageEntryBase*) l1_arr)) return;
+    slab.Free((PageTable*) l1_arr);
+    // unpoint l2
+    l2->clear();
+    // repeat for higher levels
+    if (!isTableEmpty(l2_arr)) return;
+    slab.Free((PageTable*)l2_arr);
+    l3->clear();
+    if(!isTableEmpty(l3_arr)) return;
+    slab.Free((PageTable*)l3_arr);
+    l4->clear();
+    // l4 shouldn't ever empty so we don't bother checking
+}
 // Attempts to identity-map the 2MiB of memory starting at round-down physAddr
 void kernelMap2MiBBlock(uint64_t physAddr) {
     // TODO: TLB shootdown??
@@ -218,6 +249,27 @@ void kernelMap2MiBBlock(uint64_t physAddr) {
     __asm__ volatile ("invlpg %0" : : "rm"(physAddr));
     // just map it girl
     map2MiB<slab_allocator>(kpgtable, (uint64_t)physAddr, (uint64_t)physAddr);
+}
+void kernelUnmap2MiBBlock(uint64_t physAddr) {
+    PageMapL4* l4 = &kpgtable[PML4_IDXOF(physAddr)];
+    PageDirPointer* l3_arr = (PageDirPointer*) l4->expandAddr();
+    if (l3_arr == nullptr) return;
+    PageDirPointer* l3 = &l3_arr[PDP_IDXOF(physAddr)];
+    PageDirEntry* l2_arr = (PageDirEntry*) l3->expandAddr();
+    if (l2_arr == nullptr) return;
+    PageDirEntry* l2 = &l2_arr[PDE_IDXOF(physAddr)];
+    // clear l1
+    l2->clear();
+    // TODO: TLB shootdowns
+    __asm__ volatile ("invlpg %0" : : "rm"(physAddr));
+    // repeat for higher levels
+    if (!isTableEmpty(l2_arr)) return;
+    slab.Free((PageTable*)l2_arr);
+    l3->clear();
+    if(!isTableEmpty(l3_arr)) return;
+    slab.Free((PageTable*)l3_arr);
+    l4->clear();
+    // l4 shouldn't ever empty so we don't bother checking
 }
 
 }
