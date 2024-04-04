@@ -1,3 +1,5 @@
+#include "apic/idt.hpp"
+#include "apic/gdt.hpp"
 #include "apic/pic.hpp"
 #include "libstd/merge_sort.hpp"
 #include "memory/page_alloc.hpp"
@@ -32,6 +34,11 @@ const char* mNames[] = {
     "MaxMemoryType"
 };
 #endif
+
+__attribute__ ((interrupt)) void testInterrupt(apic::InterruptFrame* stack_frame, uint64_t code) {
+    graphics::psf::print("TEST INT\n");
+    loop_forever;
+}
 
 extern "C" void kernel_start(KernelArgs* args) {
     kargs = args;
@@ -100,10 +107,17 @@ extern "C" void kernel_start(KernelArgs* args) {
     memory::initPageAllocator();
 
     apic::pic::disablePic();
+    apic::initGdt();
+    graphics::psf::print("noop");
+    apic::initIdt();
+    apic::registerInterruptHandler(0xe, testInterrupt, true);
+    // trigger a page fault
+    *(uint64_t*)(0xDEADBEEF) = 8;
 
-    memory::kernelMap4KiBBlock(0xBEEF000);
-    *(uint64_t*)(0xBEEF000) = 3;
-    memory::kernelUnmap4KiBBlock(0xBEEF000);
+    __asm__ volatile ("int %0" : : "rim"(0x40));
+
+    graphics::psf::print("woop");
 
     unimplemented();
 }
+

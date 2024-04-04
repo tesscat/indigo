@@ -47,7 +47,9 @@ Kernel::Kernel(const char* path, ion::RootNode* root, const char* trampPath) {
     // pick the addr for kArgs as above the end of the kernel
     // we really should page-align it so we can mark not-exe in the future but that's future me problem
     // TODO: see above
-    kArgsAddr = maxKAddr;
+    // pad it out a little since kernel __attribute__ ((align)) is a bit dodgy and likes to trample me
+    // give it a KiB
+    kArgsAddr = maxKAddr + (1024);
     printf("Max kAddr was %x\n", maxKAddr);
 
 

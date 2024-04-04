@@ -9,13 +9,13 @@ struct KernelArgs {
     unsigned int n_cpus;
     // PHYSICAL addr of XSDT
     void* xsdt;
-    unsigned int* framebuffer = nullptr;
+    unsigned int* framebuffer;
     unsigned int fbWidth;
     unsigned int fbHeight;
     unsigned int fbPitch;
     bool fbIsBGR;
-    int argc = 0;
-    char** argv = nullptr;
+    int argc;
+    char** argv;
     int memDescCount;
     MemoryDescriptor* memDesc;
     int kernelSegmentsCount;
