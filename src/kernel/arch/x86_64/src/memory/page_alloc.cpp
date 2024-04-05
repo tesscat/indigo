@@ -191,13 +191,10 @@ void initPageAllocator() {
 }
 
 
-// Attempts to identity-map the 4KiB of memory starting at round-down physAddr
-void kernelMap4KiBBlock(uint64_t physAddr) {
-    // TODO: TLB shootdown??
-    // flush any previous cache
-    __asm__ volatile ("invlpg %0" : : "rm"(physAddr));
+void kernelMap4KiBBlock(uint64_t virtAddr, uint64_t physAddr) {
+    __asm__ volatile ("invlpg %0" : : "rm"(virtAddr));
     // just map it girl
-    map4KiB<slab_allocator>(kpgtable, (uint64_t)physAddr, (uint64_t)physAddr);
+    map4KiB<slab_allocator>(kpgtable, (uint64_t)virtAddr, (uint64_t)physAddr);
     lcr3((uint64_t)kpgtable);
 }
 
@@ -213,21 +210,21 @@ inline bool isTableEmpty(PageEntryBase* arr) {
 
 // Unmaps memory previously set by KM4KiBBlock
 // this is a bit more complex, since we need to track the tables all the way down + check if they empty
-void kernelUnmap4KiBBlock(uint64_t physAddr) {
-    PageMapL4* l4 = &kpgtable[PML4_IDXOF(physAddr)];
+void kernelUnmap4KiBBlock(uint64_t virtAddr) {
+    PageMapL4* l4 = &kpgtable[PML4_IDXOF(virtAddr)];
     PageDirPointer* l3_arr = (PageDirPointer*) l4->expandAddr();
     if (l3_arr == nullptr) return;
-    PageDirPointer* l3 = &l3_arr[PDP_IDXOF(physAddr)];
+    PageDirPointer* l3 = &l3_arr[PDP_IDXOF(virtAddr)];
     PageDirEntry* l2_arr = (PageDirEntry*) l3->expandAddr();
     if (l2_arr == nullptr) return;
-    PageDirEntry* l2 = &l2_arr[PDE_IDXOF(physAddr)];
+    PageDirEntry* l2 = &l2_arr[PDE_IDXOF(virtAddr)];
     PageTableEntry* l1_arr = (PageTableEntry*) l2->expandAddr();
     if (l1_arr == nullptr) return;
-    PageTableEntry* l1 = &l1_arr[PTE_IDXOF(physAddr)];
+    PageTableEntry* l1 = &l1_arr[PTE_IDXOF(virtAddr)];
     // clear l1
     l1->clear();
     // TODO: TLB shootdowns
-    __asm__ volatile ("invlpg %0" : : "rm"(physAddr));
+    __asm__ volatile ("invlpg %0" : : "rm"(virtAddr));
     // is all of l1_arr free?
     if (!isTableEmpty((PageEntryBase*) l1_arr)) return;
     slab.Free((PageTable*) l1_arr);
@@ -242,26 +239,27 @@ void kernelUnmap4KiBBlock(uint64_t physAddr) {
     l4->clear();
     // l4 shouldn't ever empty so we don't bother checking
 }
-// Attempts to identity-map the 2MiB of memory starting at round-down physAddr
-void kernelMap2MiBBlock(uint64_t physAddr) {
+
+void kernelMap2MiBBlock(uint64_t virtAddr, uint64_t physAddr) {
     // TODO: TLB shootdown??
     // flush any previous cache
-    __asm__ volatile ("invlpg %0" : : "rm"(physAddr));
+    __asm__ volatile ("invlpg %0" : : "rm"(virtAddr));
     // just map it girl
-    map2MiB<slab_allocator>(kpgtable, (uint64_t)physAddr, (uint64_t)physAddr);
+    map2MiB<slab_allocator>(kpgtable, (uint64_t)virtAddr, (uint64_t)physAddr);
 }
-void kernelUnmap2MiBBlock(uint64_t physAddr) {
-    PageMapL4* l4 = &kpgtable[PML4_IDXOF(physAddr)];
+
+void kernelUnmap2MiBBlock(uint64_t virtAddr) {
+    PageMapL4* l4 = &kpgtable[PML4_IDXOF(virtAddr)];
     PageDirPointer* l3_arr = (PageDirPointer*) l4->expandAddr();
     if (l3_arr == nullptr) return;
-    PageDirPointer* l3 = &l3_arr[PDP_IDXOF(physAddr)];
+    PageDirPointer* l3 = &l3_arr[PDP_IDXOF(virtAddr)];
     PageDirEntry* l2_arr = (PageDirEntry*) l3->expandAddr();
     if (l2_arr == nullptr) return;
-    PageDirEntry* l2 = &l2_arr[PDE_IDXOF(physAddr)];
+    PageDirEntry* l2 = &l2_arr[PDE_IDXOF(virtAddr)];
     // clear l1
     l2->clear();
     // TODO: TLB shootdowns
-    __asm__ volatile ("invlpg %0" : : "rm"(physAddr));
+    __asm__ volatile ("invlpg %0" : : "rm"(virtAddr));
     // repeat for higher levels
     if (!isTableEmpty(l2_arr)) return;
     slab.Free((PageTable*)l2_arr);

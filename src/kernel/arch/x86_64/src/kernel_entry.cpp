@@ -12,6 +12,7 @@
 #include <memory/phys_alloc.hpp>
 #include <util/util.hpp>
 #include <apic/lapic.hpp>
+#include <memory/heap.hpp>
 
 KernelArgs* kargs;
 
@@ -113,6 +114,8 @@ extern "C" void kernel_start(KernelArgs* args) {
 
     memory::initPageAllocator();
 
+    memory::initHeap();
+
     apic::pic::disablePic();
     apic::initGdt();
     apic::initIdt();
@@ -122,6 +125,12 @@ extern "C" void kernel_start(KernelArgs* args) {
     apic::initLapic();
 
     graphics::psf::print("woop");
+
+    void* test = kmalloc(7483);
+    void* test2 = kmalloc(23);
+    kfree(test);
+    void* test3 = kmalloc(8000);
+    void* test4 = kmalloc(28);
 
     unimplemented();
 }
