@@ -272,4 +272,52 @@ void kernelUnmap2MiBBlock(uint64_t physAddr) {
     // l4 shouldn't ever empty so we don't bother checking
 }
 
+void kernelMapBlock(uint64_t base, uint64_t size) {
+    // round base down to 4KiB
+    uint64_t baseDown = base & ~(4*KiB-1);
+    // bump size
+    size += base & (4*KiB - 1);
+    // while baseDown isn't 2MiB aligned, map 4KiB-wise
+    while ((baseDown & (2*MiB-1)) != 0) {
+        kernelMap4KiBBlock(baseDown);
+        baseDown += 4*KiB;
+        size -= 4*KiB;
+    }
+    // map it to 2MiB
+    while (size >= 2*MiB) {
+        kernelMap2MiBBlock(baseDown);
+        baseDown -= 2*MiB;
+        size -= 2*MiB;
+    }
+    // map the remainder with 4KiB
+    while (size > 0) {
+        kernelMap4KiBBlock(baseDown);
+        baseDown += 4*KiB;
+        size -= 4*KiB;
+    }
+}
+void kernelUnmapBlock(uint64_t base, uint64_t size) {
+    // round base down to 4KiB
+    uint64_t baseDown = base & ~(4*KiB-1);
+    // bump size
+    size += base & (4*KiB - 1);
+    // while baseDown isn't 2MiB aligned, map 4KiB-wise
+    while ((baseDown & (2*MiB-1)) != 0) {
+        kernelUnmap4KiBBlock(baseDown);
+        baseDown += 4*KiB;
+        size -= 4*KiB;
+    }
+    // map it to 2MiB
+    while (size >= 2*MiB) {
+        kernelUnmap2MiBBlock(baseDown);
+        baseDown -= 2*MiB;
+        size -= 2*MiB;
+    }
+    // map the remainder with 4KiB
+    while (size > 0) {
+        kernelUnmap4KiBBlock(baseDown);
+        baseDown += 4*KiB;
+        size -= 4*KiB;
+    }
+}
 }

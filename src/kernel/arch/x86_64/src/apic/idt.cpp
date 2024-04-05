@@ -17,7 +17,7 @@ void initIdt() {
     __asm__ volatile ("sti");
 }
 
-void registerInterruptHandler(uint64_t idx, void (*func)(InterruptFrame*, uint64_t), bool isTrap, uint8_t dpl) {
+void registerExceptionHandler(uint64_t idx, void (*func)(InterruptFrame*, uint64_t), bool isTrap, uint8_t dpl) {
     idt[idx].clear();
     idt[idx].setAddr((uint64_t)func);
     idt[idx].gateType = isTrap ? 0xF : 0xE;

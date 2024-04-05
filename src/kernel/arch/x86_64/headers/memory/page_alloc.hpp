@@ -15,6 +15,10 @@ void kernelMap2MiBBlock(uint64_t physAddr);
 // If physAddr is mapped in the kernel space, unmaps it as a 2MiB block
 void kernelUnmap2MiBBlock(uint64_t physAddr);
 
+void kernelMapBlock(uint64_t base, uint64_t size);
+void kernelUnmapBlock(uint64_t base, uint64_t size);
+
+
 }
 
 #endif // !KERNEL_MEMORY_PAGE_ALLOC_HPP

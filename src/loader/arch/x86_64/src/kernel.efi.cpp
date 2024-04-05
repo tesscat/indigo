@@ -11,7 +11,9 @@
 #include <loader/kernel_args.hpp>
 #include <graphics.hpp>
 
-extern XSDT_t *xsdt;
+namespace acpi {
+extern acpi::XSDT *xsdt;
+}
 
 Kernel::Kernel(const char* path, ion::RootNode* root, const char* trampPath) {
     // load us up on kernel
@@ -49,6 +51,7 @@ Kernel::Kernel(const char* path, ion::RootNode* root, const char* trampPath) {
     // TODO: see above
     // pad it out a little since kernel __attribute__ ((align)) is a bit dodgy and likes to trample me
     // give it a KiB
+    // in future, if something pagefaults randomly it's probably kargs->framebuffer being trampled, so increase this value
     kArgsAddr = maxKAddr + (1024);
     printf("Max kAddr was %x\n", maxKAddr);
 
@@ -119,9 +122,9 @@ void Kernel::Run(size_t argc, char** argv) {
     args->totalSize = size;
 
     // count CPUS
-    args->n_cpus = countCpus();
+    args->n_cpus = acpi::countCpus();
     // xsdt pointer
-    args->xsdt = xsdt;
+    args->xsdt = acpi::xsdt;
 
     // do the graphics
     FramebufferDescriptor fb = gopSetup();

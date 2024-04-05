@@ -262,10 +262,6 @@ void markBlockAsUsedAt64m(uint64_t start, uint64_t size) {
     }
 }
 
-void markBlockAsUsed(uint64_t start, uint64_t size) {
-    markBlockAsUsedAt64m(start, size);
-}
-
 // }}}
 
 // clearing blocks {{{

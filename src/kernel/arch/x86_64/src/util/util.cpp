@@ -3,7 +3,7 @@
 namespace util {
 
 [[noreturn]] void _panic(const char *msg, const char *file, const char *line, const char *func) noexcept {
-    graphics::psf::print("PANIC! at ");
+    graphics::psf::print("\nPANIC! at ");
     graphics::psf::print(file);
     graphics::psf::print(":");
     graphics::psf::print(line);

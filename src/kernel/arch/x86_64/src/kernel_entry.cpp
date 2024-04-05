@@ -1,3 +1,4 @@
+#include "acpi/acpi.hpp"
 #include "apic/idt.hpp"
 #include "apic/gdt.hpp"
 #include "apic/pic.hpp"
@@ -10,6 +11,7 @@
 #include <libstd/itoa.hpp>
 #include <memory/phys_alloc.hpp>
 #include <util/util.hpp>
+#include <apic/lapic.hpp>
 
 KernelArgs* kargs;
 
@@ -35,9 +37,14 @@ const char* mNames[] = {
 };
 #endif
 
-__attribute__ ((interrupt)) void testInterrupt(apic::InterruptFrame* stack_frame, uint64_t code) {
-    graphics::psf::print("TEST INT\n");
+__attribute__ ((interrupt)) void testInterrupt(apic::InterruptFrame* stack_frame) {
+    graphics::psf::print("TEST INT WOOP\n");
+    return;
+}
+
+__attribute__ ((interrupt)) void gpfStub(apic::InterruptFrame* frame, uint64_t code) {
     loop_forever;
+    return;
 }
 
 extern "C" void kernel_start(KernelArgs* args) {
@@ -108,13 +115,11 @@ extern "C" void kernel_start(KernelArgs* args) {
 
     apic::pic::disablePic();
     apic::initGdt();
-    graphics::psf::print("noop");
     apic::initIdt();
-    apic::registerInterruptHandler(0xe, testInterrupt, true);
-    // trigger a page fault
-    *(uint64_t*)(0xDEADBEEF) = 8;
 
-    __asm__ volatile ("int %0" : : "rim"(0x40));
+    acpi::initAcpi();
+
+    apic::initLapic();
 
     graphics::psf::print("woop");
 

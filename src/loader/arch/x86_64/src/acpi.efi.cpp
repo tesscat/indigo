@@ -4,7 +4,7 @@
 
 #include <acpi.hpp>
 
-
+namespace acpi {
 
 // https://uefi.org/specs/UEFI/2.10/04_EFI_System_Table.html#efi-system-table-1
 #define EFI_ACPI_20_TABLE_GUID \
@@ -28,12 +28,12 @@ bool isAcpiGuid(efi_guid_t guid) {
     return false;
 }
 
-XSDT_t *xsdt;
+XSDT *xsdt;
 uint64_t xsdt_entries;
 
 void* findTableInXSDT(const char sig[4]) {
     for (int i = 0; i < xsdt_entries; i++) {
-        ACPIHeader_t* header = (ACPIHeader_t*)xsdt->entries[i];
+        ACPIHeader* header = (ACPIHeader*)xsdt->entries[i];
         if (memcmp(header->Signature, sig, 4) == 0)
             return header;
     }
@@ -45,7 +45,7 @@ struct APICSubHeader_t {
     uint8_t recordLength;
 } __attribute__ ((packed));
 struct APIC_t {
-    ACPIHeader_t header;
+    ACPIHeader header;
     uint32_t localAPICAddress;
     // TODO: if flags == 1 mask 8259 PIC's interrupts
     uint32_t flags;
@@ -103,8 +103,8 @@ void initAcpiTables() {
     char buff[16];
     buff[4] = '\0';
 
-    xsdt = (XSDT_t*)acpi_table->XsdtAddress;
-    xsdt_entries = (xsdt->header.Length - sizeof(ACPIHeader_t))/sizeof(uint64_t);
+    xsdt = (XSDT*)acpi_table->XsdtAddress;
+    xsdt_entries = (xsdt->header.Length - sizeof(ACPIHeader))/sizeof(uint64_t);
     // memcpy(buff, xsdt->header.Signature, 4);
     // printf(buff);
     // printf("\n%d entries\n", n_entries);
@@ -115,4 +115,5 @@ void initAcpiTables() {
     //     printf("\nFound ");
     //     printf(buff);
     // }
+}
 }

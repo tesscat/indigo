@@ -2,7 +2,9 @@
 #define LOADER_ACPI_HPP
 
 #include <uefi.h>
+#include <loader/acpi_partial.hpp>
 
+namespace acpi {
 void initAcpiTables();
 unsigned int countCpus();
 
@@ -19,21 +21,6 @@ struct XSDP_t {
     uint8_t reserved[3];
 } __attribute__ ((packed));
 
-struct ACPIHeader_t {
-  char Signature[4];
-  uint32_t Length;
-  uint8_t Revision;
-  uint8_t Checksum;
-  char OEMID[6];
-  char OEMTableID[8];
-  uint32_t OEMRevision;
-  uint32_t CreatorID;
-  uint32_t CreatorRevision;
-} __attribute__ ((packed));
-
-struct XSDT_t {
-    ACPIHeader_t header;
-    uint64_t entries[];
-} __attribute__ ((packed));
+}
 
 #endif // !LOADER_ACPI_HPP

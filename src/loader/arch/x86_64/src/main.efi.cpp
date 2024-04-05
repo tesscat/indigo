@@ -13,7 +13,7 @@ void error(size_t loc, const char* message) {
 
 extern "C" int main(int argc, char** argv) {
     // find the ACPI tables
-    initAcpiTables();
+    acpi::initAcpiTables();
     
 
     char* data = readFile("root.ion");

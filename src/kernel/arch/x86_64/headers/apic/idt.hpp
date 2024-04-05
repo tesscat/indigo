@@ -27,7 +27,7 @@ struct IdtGate {
     inline void clear() {
         // we're 16 bytes, or 2x64bits
         *(uint64_t*)(this) = 0;
-        *(uint64_t*)(this + 8) = 0;
+        *(uint64_t*)(((uint64_t)this) + 8) = 0;
     }
 } __attribute__ ((packed));
 
@@ -45,7 +45,13 @@ struct InterruptFrame {
 } __attribute__ ((packed));
 
 void initIdt();
-void registerInterruptHandler(uint64_t idx, void (*func)(InterruptFrame*, uint64_t), bool isTrap, uint8_t dpl = 0);
+// the backend is the same, just wanna make sure the user (me) isn't mixing up the function _types_,
+// since clang _will_ complain
+
+void registerExceptionHandler(uint64_t idx, void (*func)(InterruptFrame*, uint64_t), bool isTrap, uint8_t dpl = 0);
+inline void registerInterruptHandler(uint64_t idx, void (*func)(InterruptFrame*), bool isTrap, uint8_t dpl = 0) {
+    registerExceptionHandler(idx, reinterpret_cast<void(*)(InterruptFrame*, uint64_t)>(func), isTrap, dpl);
+}
 
 }
 
