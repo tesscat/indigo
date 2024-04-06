@@ -60,6 +60,14 @@ inline void printAsHex(int n, int l = 16) {
     graphics::psf::print(sp);
 }
 
+inline void cpuSetMSR(uint32_t msr, uint32_t lo, uint32_t hi) {
+   asm volatile("wrmsr" : : "a"(lo), "d"(hi), "c"(msr));
+}
+
+inline void cpuGetMSR(uint32_t msr, uint32_t *lo, uint32_t *hi) {
+   asm volatile("rdmsr" : "=a"(*lo), "=d"(*hi) : "c"(msr));
+}
+
 }
 
 #endif // !KERNEL_UTIL_UTIL_HPP

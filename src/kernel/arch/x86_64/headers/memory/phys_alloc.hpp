@@ -10,7 +10,6 @@ void markBlockAsUsedAt64m(uint64_t start, uint64_t size);
 inline void markBlockAsUsed(uint64_t start, uint64_t size) {
     markBlockAsUsedAt64m(start, size);
 }
-
 uint64_t allocate2mPage();
 void free2mPage(uint64_t addr);
 uint64_t allocate4kPage();

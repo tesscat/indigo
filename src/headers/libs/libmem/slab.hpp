@@ -10,6 +10,7 @@ class SlabAllocator {
     // round-up
     uint64_t* bitmaps;
     uint64_t elements;
+    uint64_t bitmapsCount;
 public:
     SlabAllocator() {}
     SlabAllocator(T* memory, uint64_t elements_) : elements{elements_}, values {memory} {
@@ -17,7 +18,8 @@ public:
         // we assume that someone else has done the math, and it all fits in
         // put bitmaps high up in case T requires alignment
         bitmaps = (uint64_t*)memory[elements];
-        for (uint64_t i = 0; i < elements; i++) {
+        bitmapsCount = (elements + 63)/64;
+        for (uint64_t i = 0; i < bitmapsCount; i++) {
             bitmaps[i] = 0;
         }
     }
@@ -33,7 +35,7 @@ public:
         // find the first non-full element
         uint64_t idx = -1;
         bool found = false;
-        for (uint64_t i = 0; i < elements; i++) {
+        for (uint64_t i = 0; i < bitmapsCount; i++) {
             // TODO: is ( a != full ) or ( ~a != 0) better?
             if (bitmaps[i] != 0xffffffffffffffff) {
                 idx = i;

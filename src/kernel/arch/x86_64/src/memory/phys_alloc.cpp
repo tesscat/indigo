@@ -357,6 +357,28 @@ uint64_t findFirstPartial64mIdx() {
     }
     return -1;
 }
+// returns the index of the first partially free 64m block
+// or -1 if not found
+uint64_t findFirstFullyFree64mIdx() {
+    // we can check 32 at a time
+    for (uint64_t idx = 0; idx < mapSizes[3]/32; idx++) {
+        uint64_t currBatch = maps[3][idx];
+        // we want a 0 in the low slot
+        currBatch = ~currBatch;
+        // we want a 1 in the low slot
+        if ((currBatch & partially_used_64bits) != 0) {
+            // hit!
+            // where it at
+            uint64_t shiftIdx = 0;
+            while ((0b01 & currBatch) == 0) {
+                shiftIdx += 1;
+                currBatch = currBatch >> 2;
+            }
+            return shiftIdx + idx*32;
+        }
+    }
+    return -1;
+}
 // within the N-th 64-m block, find the first partially free 2m
 // returns the Full (from-start) index
 uint64_t findFirstPartial2mIdxWithin64m(uint64_t idx_64m) {
@@ -448,7 +470,6 @@ uint64_t findFirstFullyFree4kIdxWithin128k(uint64_t idx_128k) {
 // }}}
 
 // actually allocating {{{
-
 uint64_t allocate2mPage() {
     // find first partial 64m
     uint64_t idx_64m = findFirstPartial64mIdx();

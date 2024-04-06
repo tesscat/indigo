@@ -13,7 +13,7 @@ void initAcpi() {
     XSDT* xsdt = kargs->xsdt;
     uint32_t size = 4*KiB;
 
-    memory::kernelMap4KiBBlock((uint64_t)xsdt);
+    memory::kernelIdentityMap4KiBBlock((uint64_t)xsdt);
     // map more if we need it
     if (xsdt->header.Length > 4*KiB) {
         size = xsdt->header.Length;
@@ -27,7 +27,7 @@ void initAcpi() {
     // pre-emptively map all the tables since it'll be nicer
     for (uint64_t i = 0; i < xsdt_entries; i++) {
         ACPIHeader* header = (ACPIHeader*)xsdt->entries[i];
-        memory::kernelMap4KiBBlock((uint64_t)header);
+        memory::kernelIdentityMap4KiBBlock((uint64_t)header);
         // size shenanigans
         size = 4*KiB;
         if (header->Length > 4*KiB) {

@@ -80,7 +80,7 @@ PageDirEntry* map2MiB(PageMap map, uint64_t virtAddr, uint64_t physAddr, uint64_
     PageDirEntry* pde = locateOrAllocatePDE<allocator>(map, virtAddr, flags & (~PAGE_BIG_PAGE));
     pde->clear();
     pde->setAddr(physAddr);
-    *((uint64_t*)pde) |= flags;
+    *((uint64_t*)pde) |= flags | PAGE_BIG_PAGE;
 
     return pde;
 }
@@ -114,7 +114,9 @@ libmem::SlabAllocator<PageTable> slab;
 //     return (uint64_t)(kpage_map_scratch) + (4*KiB)*(used_blocks-1);
 // }
 
+uint64_t hits = 0;
 uint64_t slab_allocator() {
+    hits++;
     uint64_t addr = (uint64_t)slab.Alloc();
     if (addr == 0)
         panic("Kernel paging slab out of memory");
@@ -126,8 +128,10 @@ extern "C" char _kernel_virt_end;
 
 
 void initPageAllocator() {
+    hits = 0;
     // we need to pick an address for the initial paging scratch
     uint8_t* initial_paging_scratch = (uint8_t*) allocate2mPage();
+    allocate2mPage();
     // give this to the slab alloc
     // 511 is a bit of a guess, ideally we'd have the slab alloc solve for the maximum it can fit
     // TODO: have slab solve for how much to allocate for the bitmap
@@ -191,10 +195,10 @@ void initPageAllocator() {
 }
 
 
-void kernelMap4KiBBlock(uint64_t virtAddr, uint64_t physAddr) {
+void kernelMap4KiBBlock(uint64_t virtAddr, uint64_t physAddr, uint64_t flags) {
     __asm__ volatile ("invlpg %0" : : "rm"(virtAddr));
     // just map it girl
-    map4KiB<slab_allocator>(kpgtable, (uint64_t)virtAddr, (uint64_t)physAddr);
+    map4KiB<slab_allocator>(kpgtable, (uint64_t)virtAddr, (uint64_t)physAddr, flags);
     lcr3((uint64_t)kpgtable);
 }
 
@@ -240,12 +244,12 @@ void kernelUnmap4KiBBlock(uint64_t virtAddr) {
     // l4 shouldn't ever empty so we don't bother checking
 }
 
-void kernelMap2MiBBlock(uint64_t virtAddr, uint64_t physAddr) {
+void kernelMap2MiBBlock(uint64_t virtAddr, uint64_t physAddr, uint64_t flags) {
     // TODO: TLB shootdown??
     // flush any previous cache
     __asm__ volatile ("invlpg %0" : : "rm"(virtAddr));
     // just map it girl
-    map2MiB<slab_allocator>(kpgtable, (uint64_t)virtAddr, (uint64_t)physAddr);
+    map2MiB<slab_allocator>(kpgtable, (uint64_t)virtAddr, (uint64_t)physAddr, flags);
 }
 
 void kernelUnmap2MiBBlock(uint64_t virtAddr) {
@@ -270,26 +274,26 @@ void kernelUnmap2MiBBlock(uint64_t virtAddr) {
     // l4 shouldn't ever empty so we don't bother checking
 }
 
-void kernelMapBlock(uint64_t base, uint64_t size) {
+void kernelMapBlock(uint64_t base, uint64_t size_, uint64_t flags) {
     // round base down to 4KiB
     uint64_t baseDown = base & ~(4*KiB-1);
     // bump size
-    size += base & (4*KiB - 1);
+    int64_t size = size_ + base & (4*KiB - 1);
     // while baseDown isn't 2MiB aligned, map 4KiB-wise
     while ((baseDown & (2*MiB-1)) != 0) {
-        kernelMap4KiBBlock(baseDown);
+        kernelIdentityMap4KiBBlock(baseDown, flags);
         baseDown += 4*KiB;
         size -= 4*KiB;
     }
     // map it to 2MiB
     while (size >= 2*MiB) {
-        kernelMap2MiBBlock(baseDown);
+        kernelIdentityMap2MiBBlock(baseDown, flags);
         baseDown -= 2*MiB;
         size -= 2*MiB;
     }
     // map the remainder with 4KiB
     while (size > 0) {
-        kernelMap4KiBBlock(baseDown);
+        kernelIdentityMap4KiBBlock(baseDown, flags);
         baseDown += 4*KiB;
         size -= 4*KiB;
     }

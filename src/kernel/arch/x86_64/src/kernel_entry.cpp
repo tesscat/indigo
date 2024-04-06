@@ -126,12 +126,6 @@ extern "C" void kernel_start(KernelArgs* args) {
 
     graphics::psf::print("woop");
 
-    void* test = kmalloc(7483);
-    void* test2 = kmalloc(23);
-    kfree(test);
-    void* test3 = kmalloc(8000);
-    void* test4 = kmalloc(28);
-
     unimplemented();
 }
 
