@@ -13,6 +13,7 @@
 #include <util/util.hpp>
 #include <apic/lapic.hpp>
 #include <memory/heap.hpp>
+#include <multi/start_others.hpp>
 
 KernelArgs* kargs;
 
@@ -111,6 +112,8 @@ extern "C" void kernel_start(KernelArgs* args) {
     memory::initSystemMap(args->memDesc, static_cast<size_t>(args->memDescCount));
 
     memory::initPhysAllocator();
+    // immediately mark block for entry_others since we can't change this (it seems)
+    memory::markBlockAsUsed(0x8000, 4*KiB);
 
     memory::initPageAllocator();
 
@@ -125,6 +128,8 @@ extern "C" void kernel_start(KernelArgs* args) {
     apic::initLapic();
 
     graphics::psf::print("woop");
+
+    multi::startOthers();
 
     unimplemented();
 }

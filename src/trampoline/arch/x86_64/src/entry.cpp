@@ -1,3 +1,4 @@
+#include "defs.hpp"
 #include "loader/kernel_args.hpp"
 #include "loader/memory_descriptor.hpp"
 #include "paging.hpp"
@@ -86,7 +87,7 @@ extern "C" void _start(KernelArgs* args, uint64_t kEntryVAddr) {
     kEntry = kEntryVAddr;
     fb = kargs->framebuffer;
     // set up a nice pagemap
-    // identity map wherever we are, and map 48MiB to idk 50MiB to 0xffffe00000000000 + 48MiB
+    // identity map wherever we are, and map 48MiB to idk 50MiB to KERNEL_OFFSET + 48MiB
     // and use the recursive mapping trick
     // 
     // find a segment of suitable size
@@ -184,21 +185,20 @@ extern "C" void _start(KernelArgs* args, uint64_t kEntryVAddr) {
     pageMapLowPDPD[0].setAddr((uint64_t)pageDir);
 
 
-    // we wanna map 48MB to 0xffffe00000000000 + 48MB
-    // what index in the TL is 0xe... at? 
-    // It's 229376 GiB, and each one is 512 GiB,
-    // so it's at 448. which is coincidentally (0xe/0x10) through the table
-    // (its not a coincidence)
-    // we'll just map like 512GiB, nobody is ever going to want memory at like Over There
-    // since we map the gigabyte, this does have the effect of binding physical 0 -> 48MiB to both virtual 0->48MiB as we did earlier and 0xe.. -> +48MiB but who cares
+    // we wanna map 48MB to KERNEL_OFFSET + 48MB
+    // which is in the highest 2GiB, so its obvs the last one
     memory::PageDirPointer* kernelPDP = (memory::PageDirPointer*) nextFreeMem;
     nextFreeMem += 512*sizeof(memory::PageDirPointer);
 
-    // setRecursiveMapping(kernelPDP);
 
     // this does mean if we try to access high kernel memory we will simply Run Out of RAM so we gotta be careful
     // user processes _should_ permission error tho so we good on that
-    for (int i = 0; i < 512; i++) {
+    // map the highest 2GiB
+    // empty the rest of the map first
+    for (int i = 0; i < 510; i++) {
+        kernelPDP[i].clear();
+    }
+    for (int i = 510; i < 512; i++) {
         // kernel perms
         kernelPDP[i].present = true;
         kernelPDP[i].rw = true;
@@ -209,12 +209,12 @@ extern "C" void _start(KernelArgs* args, uint64_t kEntryVAddr) {
         // don't set global since this table will be overwritten
         kernelPDP[i].availableBit_orGlobal = false;
         // we mapping the GiBs, remember
-        kernelPDP[i].setAddr(i * (1024 * 1024 * 1024));
+        kernelPDP[i].setAddr((i-510) * (1024 * 1024 * 1024));
         kernelPDP[i].disableExecute = false;
     }
 
-    setFullPermsAndPresent(&pageMapTL[448]);
-    pageMapTL[448].setAddr((uint64_t) kernelPDP);
+    setFullPermsAndPresent(&pageMapTL[511]);
+    pageMapTL[511].setAddr((uint64_t) kernelPDP);
 
     // we also need to ID-map the framebuffer
     // it's quite likely a few MiB in size, so we'll use that.
@@ -277,17 +277,17 @@ extern "C" void _start(KernelArgs* args, uint64_t kEntryVAddr) {
     }
 
     // update the values of kernelArgs since theyre remapped
-    kargs->memDesc = (MemoryDescriptor*)((uint64_t)kargs->memDesc + 0xffffe00000000000);
-    kargs->kernelSegments = (KernelSegmentLoc*)((uint64_t)kargs->kernelSegments + 0xffffe00000000000);
+    kargs->memDesc = (MemoryDescriptor*)((uint64_t)kargs->memDesc + KERNEL_OFFSET);
+    kargs->kernelSegments = (KernelSegmentLoc*)((uint64_t)kargs->kernelSegments + KERNEL_OFFSET);
     // update all the char*s
     for(int i = 0; i < kargs->argc; i++) {
-        kargs->argv[i] = (char*)((uint64_t)kargs->argv[i] + 0xffffe00000000000);
+        kargs->argv[i] = (char*)((uint64_t)kargs->argv[i] + KERNEL_OFFSET);
     }
     // then the array ptr itself
-    kargs->argv = (char**)((uint64_t)kargs->argv + 0xffffe00000000000);
+    kargs->argv = (char**)((uint64_t)kargs->argv + KERNEL_OFFSET);
     
     // update kargs itself, since we've remapped it like 0xe... higher
-    kargs = (KernelArgs*)((uint64_t)kargs + 0xffffe00000000000);
+    kargs = (KernelArgs*)((uint64_t)kargs + KERNEL_OFFSET);
 
     // okie the page tables are all set up
     // time for scary, we need to mov to CR3 the physical address

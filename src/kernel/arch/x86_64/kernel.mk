@@ -27,9 +27,10 @@ KERNEL_OBJS := $(KERNEL_SILVER_OBJ) $(KERNEL_AS_OBJ) $(KERNEL_CPP_OBJ) $(BUILD_D
 listobjs:
 	echo $(KERNEL_OBJS)
 
+# TODO: better mcmodel than large
 $(BUILD_DIR)/$(KERNEL_NAME)/%.o: $(SRC_DIR)/$(KERNEL_NAME)/%.cpp
 	mkdir -p $(shell dirname $@)
-	$(CPPC) $(BASE_FLAGS) -mcmodel=large -fno-stack-protector -fno-stack-check $(INC_FLAGS) -c $< -o $@
+	$(CPPC) $(BASE_FLAGS) -fno-stack-protector -fno-stack-check -mcmodel=kernel $(INC_FLAGS) -c $< -o $@
 
 $(BUILD_DIR)/$(KERNEL_NAME)/%.o: $(SRC_DIR)/$(KERNEL_NAME)/%.s
 	mkdir -p $(shell dirname $@)

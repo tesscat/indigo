@@ -15,14 +15,13 @@
 // The highest level must always hold true.
 // We use 4KiB, 128KiB, 2M, 64M, 128M sections
 
+#include "defs.hpp"
 #include <cstdint>
 #include <memory/system_map.hpp>
 #include <memory/phys_alloc.hpp>
 #include <util/util.hpp>
 #include <entry.hpp>
 
-extern "C" char _kernel_phys_end;
-extern "C" char _kernel_phys_start;
 
 #define N_MAPS 4
 
@@ -55,6 +54,9 @@ uint64_t mapSizes[N_MAPS];
 // checks the first bit of each, since both 0b10 and 0b11 mean unusable
 #define fully_used_64bits 0xaaaaaaaaaaaaaaaa // 0xa == 0b1010
 #define partially_used_64bits 0x5555555555555555 // 0x5 = 0b0101
+
+extern "C" char _kernel_virt_end;
+extern "C" char _kernel_virt_start;
 
 namespace memory {
 
@@ -511,7 +513,9 @@ void free4kPage(uint64_t addr) {
 // TODO: include the dirty low stuff too, we can use that if we want to
 // TODO: but make sure to clean it + mark stuff out that we can't use
 void initPhysAllocator() {
-    uint64_t kernel_virt_end = 0xffffe00000000000 + (uint64_t) &_kernel_phys_end;
+    uint64_t kernel_virt_end = (uint64_t)&_kernel_virt_end;
+    uint64_t kernel_phys_start = (uint64_t)&_kernel_virt_start - KERNEL_OFFSET;
+    uint64_t kernel_phys_end = (uint64_t)&_kernel_virt_end - KERNEL_OFFSET;
     // how big will the bitmaps need to be?
     uint64_t memSize = memory::memMap[memory::memMapLen - 1].start + memory::memMap[memory::memMapLen - 1].len;
     uint64_t mapSize = 0;
@@ -566,10 +570,10 @@ void initPhysAllocator() {
     markBlockAsUsedAt4k(0, 4*KiB - 1);
 
     // okay what my kernel look like
-    markBlockAsUsedAt4k((uint64_t)&_kernel_phys_start, (uint64_t)&_kernel_phys_end - (uint64_t)&_kernel_phys_start);
+    markBlockAsUsedAt4k(kernel_phys_start, kernel_phys_end - kernel_phys_start);
     // we also got these maps, and kargs
-    markBlockAsUsedAt4k((uint64_t)kargs - 0xffffe00000000000, kargs->totalSize);
-    markBlockAsUsedAt4k((uint64_t)&maps[0] - 0xffffe00000000000, mapSize);
+    markBlockAsUsedAt4k((uint64_t)kargs - KERNEL_OFFSET, kargs->totalSize);
+    markBlockAsUsedAt4k((uint64_t)&maps[0] - KERNEL_OFFSET, mapSize);
 
     uint64_t last_high = 0;
 

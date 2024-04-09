@@ -17,7 +17,6 @@ uint64_t localApicPhysAddr;
 
 // the LAPIC is at 0xfee00000 by _definition_
 
-#define LAPIC_BASE 0xFEE00000
 namespace lapic {
 #define helper_uint32(name, offs) uint32_t volatile* name = reinterpret_cast<uint32_t*>(LAPIC_BASE + offs);
 #define helper_uint32_const(name, offs) uint32_t const volatile* name = reinterpret_cast<uint32_t*>(LAPIC_BASE + offs);
@@ -34,6 +33,8 @@ helper_uint32(destinationFormat, 0xE0)
 helper_uint32(spuriousInterruptVector, 0xF0)
 // TODO: the In-Service register and Trigger Mode Register and Interrupt Request Register
 helper_uint32(errorStatus, 0x280)
+helper_uint32(icr0, 0x300)
+helper_uint32(icr1, 0x310)
 namespace lvt {
 helper_lvt(correctedMachineCheck, 0x2F0)
 helper_lvt(timer, 0x320)
@@ -136,7 +137,7 @@ void initLapic() {
     // memcpy(&lapic, &localLapic, sizeof(LapicRegisters));
 
     registerInterruptHandler(0xff, spurious, false);
-    registerInterruptHandler(48, timer, false);
+    // registerInterruptHandler(48, timer, false);
 
     // set the siv
     *lapic::spuriousInterruptVector = 0x1ff;
@@ -184,24 +185,37 @@ void initLapic() {
     // enable the apic counter
     *(uint32_t*)lapic::lvt::timer |= 0x00020000;
     // now wait until the PIT reaches 0
-    while ((io::inb(0x61) & 0x20) == 0) {}
+    while ((io::inb(0x61) & 0x20) == 0) {__asm__ volatile ("pause" : : : "memory");}
     // get the current counter
     uint32_t currCount = *lapic::timerCurrentCount;
     // the ticks elapsed in 10ms
     ticksPerSecond = 100*(((uint32_t)-1) - currCount);
     // we did use 0x3 divisor but since we keep that we can ignore it
     // enable the timer again
-    lapic::lvt::timer->vectorNumber = 48;
-    *(uint32_t*)lapic::lvt::timer |= 0x00020000;
+    // lapic::lvt::timer->vectorNumber = 48;
+    // *(uint32_t*)lapic::lvt::timer |= 0x00020000;
 
     setApicTimerHz(4);
-
-    while(1) {};
 }
 
 void setApicTimerHz(uint64_t hz) {
     // ticksPerSecond/hz
     *lapic::timerInitialCount = ticksPerSecond/hz;
+}
+
+void apicSleep(uint64_t ms) {
+#ifdef REAL_HARDWARE
+    uint64_t otherMath = (*lapic::timerInitialCount - ((ticksPerSecond*ms)/1000));
+    uint64_t target = (*lapic::timerCurrentCount + otherMath) % *lapic::timerInitialCount;
+    bool sign = target < *lapic::timerCurrentCount;
+    while (*lapic::timerInitialCount > target || sign) {
+        if (sign)
+            sign = target < *lapic::timerCurrentCount;
+        __asm__ volatile ("pause" : : : "memory");
+    }
+#else
+    return;
+#endif
 }
 
 }

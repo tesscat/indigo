@@ -1,3 +1,4 @@
+#include "defs.hpp"
 #include "graphics/psf.hpp"
 #include "loader/memory_descriptor.hpp"
 #include <cstdint>
@@ -15,11 +16,11 @@ void printAsHex(int n, int l = 16) {
     graphics::psf::print(sp);
 }
 
+extern "C" char _kernel_virt_start;
+extern "C" char _kernel_virt_end;
+
 SystemMemMapEntry memMap[0x400];
 uint64_t memMapLen;
-
-extern "C" char _kernel_phys_start;
-extern "C" char _kernel_phys_end;
 
 void initSystemMap(MemoryDescriptor* mDescs, size_t mDescsCount) {
     SystemMemMapEntry mmaps[0x400];
@@ -53,8 +54,8 @@ void initSystemMap(MemoryDescriptor* mDescs, size_t mDescsCount) {
         i = j+1;
     }
     
-    uint64_t kStart = (uint64_t) &_kernel_phys_start;
-    uint64_t kEnd = (uint64_t) &_kernel_phys_end;
+    uint64_t kStart = (uint64_t) &_kernel_virt_start - KERNEL_OFFSET;
+    uint64_t kEnd = (uint64_t) &_kernel_virt_end - KERNEL_OFFSET;
     // copy it across and add in kernel segments
     int j = 0;
     int curr_idx = 0;

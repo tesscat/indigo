@@ -17,9 +17,6 @@ namespace memory {
 #define PAGE_GLOBAL (1<<8)
 #define PAGE_DISABLE_EXECUTE ((uint64_t)1<<63)
 
-// kernel data
-#define KERNEL_OFFSET ((uint64_t)0xffffe00000000000)
-
 // The template for the higher-order entries
 struct PageEntryBase {
     // is this present in physical memory (ie if not we raise a page fault)

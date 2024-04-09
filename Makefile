@@ -38,7 +38,7 @@ SILVERC := x
 SILVERC_2 := clang
 SILVERC_2_FLAGS := -ffreestanding -Wall -Wextra -fno-exceptions -fno-rtti
 
-BASE_FLAGS := $(INC_FLAGS) -ffreestanding -nostdlib -mno-red-zone -mno-sse -mno-sse2 -mno-mmx -mno-avx -fno-pie -no-pie -fno-rtti -Wall -Wextra -fno-exceptions
+BASE_FLAGS := $(INC_FLAGS) -ffreestanding -nostdlib -mno-red-zone -mno-sse -mno-sse2 -mno-mmx -mno-avx -fno-rtti -Wall -Wextra -fno-exceptions
 AS_FLAGS := $(BASE_FLAGS)
 
 LD_FLAGS := -nostdlib --no-pie

@@ -23,6 +23,7 @@ void kernelUnmap2MiBBlock(uint64_t virtAddr);
 void kernelMapBlock(uint64_t base, uint64_t size, uint64_t flags = PAGE_PRESENT | PAGE_READ_WRITE);
 void kernelUnmapBlock(uint64_t base, uint64_t size);
 
+extern PageMapL4* kpgtable;
 
 }
 

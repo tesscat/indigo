@@ -1,3 +1,4 @@
+#include "defs.hpp"
 #include "memory/page_alloc.hpp"
 #include "memory/phys_alloc.hpp"
 #include "util/util.hpp"
@@ -17,8 +18,6 @@ uint64_t len;
 MemHeader* heap_start;
 MemHeader* first_hole;
 
-// put it somewhere we'll never hit
-#define HEAP_VIRTUAL_BASE 0xfffff00000000000
 
 void initHeap() {
     // find some memory

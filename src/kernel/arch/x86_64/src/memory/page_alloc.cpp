@@ -1,4 +1,5 @@
 #include "memory/page_alloc.hpp"
+#include "defs.hpp"
 #include "libmem/slab.hpp"
 #include "loader/kernel_args.hpp"
 #include "memory/phys_alloc.hpp"
