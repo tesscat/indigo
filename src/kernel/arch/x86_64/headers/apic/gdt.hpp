@@ -56,6 +56,7 @@ struct SegmentSelector {
 } __attribute__ ((packed));
 
 void initGdt();
+void loadGdt();
 
 }
 

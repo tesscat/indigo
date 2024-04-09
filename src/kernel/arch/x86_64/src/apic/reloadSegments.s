@@ -14,7 +14,8 @@ reloadSegments:
    MOV   AX, 0x10 ; 0x10 is a stand-in for your data segment
    MOV   DS, AX
    MOV   ES, AX
-   MOV   FS, AX
-   MOV   GS, AX
+   ; We will use FS/GS for uhh my own stuff
+   ; MOV   FS, AX
+   ; MOV   GS, AX
    MOV   SS, AX
    RET

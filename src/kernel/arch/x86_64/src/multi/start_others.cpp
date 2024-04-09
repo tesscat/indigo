@@ -10,7 +10,9 @@
 
 namespace multi {
 
+// Structures the other CPU accesses to read/write it's own state
 sync::Spinlock startupLock;
+uint64_t cpuIdx;
 
 extern "C" uint64_t other_stack_top = 0;
 extern "C" void trampoline_start();
@@ -31,23 +33,34 @@ void startOthers() {
     __cpuid(0x1, eax, ebx, unused, unused);
     ebx = ebx >> 24;
 
-    uint8_t* lapic_ptr = (uint8_t*)LAPIC_BASE;
-
     startupLock.init();
 
+    // send an INIT IPI to all APICs apart from my own
+    *apic::lapic::errorStatus = 0;
+    *apic::lapic::icr0 = 0b11001100010100000000;
+    // de-assert it
+    *apic::lapic::errorStatus = 0;
+    *apic::lapic::icr0 = 0b11001000010100000000;
+
     for (uint64_t i = 0; i < nCpus; i++) {
-        if (cpus[i].apicId == ebx) continue;
+        if (cpus[i].apicId == ebx) {
+            // set our own CPU id
+            __asm__ volatile ("movw %0, %%fs" : : "rim"(i));
+            continue;
+        }
+        // let it get its idx
+        cpuIdx = i;
         // lock startup on new thread's behalf
         startupLock.lock();
-        other_stack_top = (uint64_t)kmalloc(16*KiB);
+        other_stack_top = (uint64_t)kmalloc(16*KiB) + (16*KiB);
         // send a init IPI
-        *apic::lapic::errorStatus = 0;
-        *apic::lapic::icr1 = cpus[i].apicId << 24;
-        *apic::lapic::icr0 = 0b1100010100000000;
-        // de-assert the init IPI
-        *apic::lapic::errorStatus = 0;
-        *apic::lapic::icr1 = cpus[i].apicId << 24;
-        *apic::lapic::icr0 = 0b1000010100000000;
+        // *apic::lapic::errorStatus = 0;
+        // *apic::lapic::icr1 = cpus[i].apicId << 24;
+        // *apic::lapic::icr0 = 0b1100010100000000;
+        // // de-assert the init IPI
+        // *apic::lapic::errorStatus = 0;
+        // *apic::lapic::icr1 = cpus[i].apicId << 24;
+        // *apic::lapic::icr0 = 0b1000010100000000;
         // send SIPI twice
         for (int j = 0; j < 2; j++) {
             *apic::lapic::errorStatus = 0;

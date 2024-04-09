@@ -13,6 +13,12 @@ struct CPU {
 extern uint64_t nCpus;
 extern CPU* cpus;
 
+inline uint16_t getCpuIdx() {
+    uint16_t ret = 0;
+    __asm__ volatile ("movw %%fs, %0" : "=rim"(ret));
+    return ret ;
+}
+
 }
 
 #endif // !KERNEL_MULTI_CPU_HPP

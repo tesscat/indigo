@@ -47,6 +47,10 @@ void initGdt() {
 
     pointer.size = sizeof(GdtDescriptor) * 5;
     pointer.offset = (uint64_t)&gdt[0];
+    loadGdt();
+}
+
+void loadGdt() {
     __asm__ volatile ("lgdt %0" : : "m"(pointer));
 
     reloadSegments();
