@@ -71,6 +71,8 @@ struct LvtRegister {
 
 void setApicTimerHz(uint64_t hz);
 
+void enableLapic();
+
 void apicSleep(uint64_t ms);
 
 namespace lapic {

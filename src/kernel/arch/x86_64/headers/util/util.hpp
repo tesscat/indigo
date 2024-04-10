@@ -60,6 +60,7 @@ inline void printAsHex(int n, int l = 16) {
     graphics::psf::print(sp);
 }
 
+#define MSR_FSBASE 0xC0000100
 inline void cpuSetMSR(uint32_t msr, uint32_t lo, uint32_t hi) {
    asm volatile("wrmsr" : : "a"(lo), "d"(hi), "c"(msr));
 }

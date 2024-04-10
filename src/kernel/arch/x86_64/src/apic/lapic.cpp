@@ -192,10 +192,19 @@ void initLapic() {
     ticksPerSecond = 100*(((uint32_t)-1) - currCount);
     // we did use 0x3 divisor but since we keep that we can ignore it
     // enable the timer again
-    // lapic::lvt::timer->vectorNumber = 48;
-    // *(uint32_t*)lapic::lvt::timer |= 0x00020000;
 
     setApicTimerHz(4);
+
+    enableLapic();
+}
+
+void enableLapic() {
+    // set SIV
+    *lapic::spuriousInterruptVector = 0x1ff;
+    setApicTimerHz(4);
+    // enable timer
+    *(uint32_t*)lapic::lvt::timer |= 0x00020000;
+    // lapic::lvt::timer->vectorNumber = 48;
 }
 
 void setApicTimerHz(uint64_t hz) {

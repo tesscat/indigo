@@ -12,6 +12,9 @@ void initIdt() {
     desc.size = sizeof(idt) - 1;
     // paging applies for IDT stuff
     desc.offset = (uint64_t) &idt[0];
+    enableIdt();
+}
+void enableIdt() {
     __asm__ volatile ("lidt %0" : : "m"(desc));
     // re-enable interrupts
     __asm__ volatile ("sti");

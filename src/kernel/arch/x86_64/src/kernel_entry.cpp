@@ -49,6 +49,10 @@ __attribute__ ((interrupt)) void gpfStub(apic::InterruptFrame* frame, uint64_t c
     return;
 }
 
+__attribute__ ((interrupt)) void pgStub(apic::InterruptFrame* frame, uint64_t code) {
+    loop_forever;
+}
+
 extern "C" void kernel_start(KernelArgs* args) {
     kargs = args;
     graphics::psf::initPSF();
@@ -123,6 +127,8 @@ extern "C" void kernel_start(KernelArgs* args) {
     apic::initGdt();
     apic::initIdt();
 
+    apic::registerExceptionHandler(0xe, pgStub, true);
+
     acpi::initAcpi();
 
     apic::initLapic();
@@ -130,6 +136,8 @@ extern "C" void kernel_start(KernelArgs* args) {
     graphics::psf::print("woop");
 
     multi::startOthers();
+
+    loop_forever;
 
     unimplemented();
 }

@@ -45,6 +45,7 @@ struct InterruptFrame {
 } __attribute__ ((packed));
 
 void initIdt();
+void enableIdt();
 // the backend is the same, just wanna make sure the user (me) isn't mixing up the function _types_,
 // since clang _will_ complain
 

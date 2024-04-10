@@ -1,25 +1,47 @@
 #include "apic/gdt.hpp"
+#include "apic/lapic.hpp"
 #include "graphics/psf.hpp"
 #include "multi/cpu.hpp"
 #include "sync/spinlock.hpp"
 #include "util/util.hpp"
 #include <multi/start_others.hpp>
+#include <apic/idt.hpp>
 
 namespace multi {
 extern sync::Spinlock startupLock;
-extern uint64_t cpuIdx;
 }
 
 extern "C" void entry_other() {
+    __asm__ volatile ("cli");
+
+    // early init code
     // load proper GDT
     apic::loadGdt();
-    // set our cpu idx
-    __asm__ volatile ("movw %0, %%fs" : : "rim"(multi::cpuIdx));
-    // properly paged not proper GDT'd loaded
+    // idt
+    apic::enableIdt();
+    // lapic
+    apic::enableLapic();
+    // set our CPU idx
+    uint16_t apicId = (*apic::lapic::apicId >> 24);
+    // some dodgy looping
+    uint64_t i = 0;
+    for (; i < multi::nCpus; i++) {
+        if (multi::cpus[i].apicId == apicId) {
+            util::cpuSetMSR(MSR_FSBASE, (i & 0xffffffff), (i >> 32));
+            break;
+        }
+    }
+    if (i == multi::nCpus) {
+        panic("Unable to find APIC id");
+    }
+    // tell BSP we are living
+    multi::startupLock.release();
+    // After this we need to use locks properly
+    graphics::psf::consoleLock.lock();
     graphics::psf::print("hello from other id: ");
     util::printAsHex(multi::getCpuIdx());
     graphics::psf::print("\n");
-    // tell BSP we are living
-    multi::startupLock.release();
+    graphics::psf::consoleLock.release();
+
     loop_forever;
 }

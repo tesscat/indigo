@@ -1,6 +1,7 @@
 #ifndef KERNEL_MULTI_CPU_HPP
 #define KERNEL_MULTI_CPU_HPP
 
+#include "util/util.hpp"
 #include <stdint.h>
 
 namespace multi {
@@ -13,10 +14,10 @@ struct CPU {
 extern uint64_t nCpus;
 extern CPU* cpus;
 
-inline uint16_t getCpuIdx() {
-    uint16_t ret = 0;
-    __asm__ volatile ("movw %%fs, %0" : "=rim"(ret));
-    return ret ;
+inline uint64_t getCpuIdx() {
+    uint32_t retlo, rethi = 0;
+    util::cpuGetMSR(MSR_FSBASE, &retlo, &rethi);
+    return (((uint64_t)rethi) << 32) | retlo;
 }
 
 }
