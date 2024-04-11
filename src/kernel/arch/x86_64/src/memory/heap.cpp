@@ -3,6 +3,7 @@
 #include "memory/phys_alloc.hpp"
 #include "util/util.hpp"
 #include <stdint.h>
+#include <libmem/mem.hpp>
 
 namespace memory {
 
@@ -129,5 +130,15 @@ void kfree(const void* addr) {
 void* kmalloc(const uint64_t size) {
     using namespace memory;
     return Allocate(size, first_hole);
+}
+
+void* krealloc(const void* addr, const uint64_t size) {
+    using namespace memory;
+    // TODO: check successor to see if we can flat expand
+    MemHeader* mh = (MemHeader*) addr - sizeof(MemHeader);
+    void* a2 = kmalloc(size);
+    memcpy(a2, addr, mh->size);
+    kfree(addr);
+    return a2;
 }
 

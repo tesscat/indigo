@@ -58,7 +58,15 @@ uint64_t mapSizes[N_MAPS];
 extern "C" char _kernel_virt_end;
 extern "C" char _kernel_virt_start;
 
+// little hack to get my hands on bBE
+namespace graphics {
+namespace screen {
+extern uint64_t backBufferEnd;
+}
+}
+
 namespace memory {
+uint64_t physMapEnd;
 
 // inline bitmap operations {{{
 inline void or4kAddr(uint64_t addr, uint8_t val) {
@@ -513,7 +521,6 @@ void free4kPage(uint64_t addr) {
 // TODO: include the dirty low stuff too, we can use that if we want to
 // TODO: but make sure to clean it + mark stuff out that we can't use
 void initPhysAllocator() {
-    uint64_t kernel_virt_end = (uint64_t)&_kernel_virt_end;
     uint64_t kernel_phys_start = (uint64_t)&_kernel_virt_start - KERNEL_OFFSET;
     uint64_t kernel_phys_end = (uint64_t)&_kernel_virt_end - KERNEL_OFFSET;
     // how big will the bitmaps need to be?
@@ -524,6 +531,7 @@ void initPhysAllocator() {
     }
     graphics::psf::print("Memory is: ");
     util::printAsHex(memSize);
+    graphics::psf::print("\n");
     // mapSize is now one byte for every bitmap entry
     mapSize = util::ceilDiv(mapSize, 4);
 
@@ -531,7 +539,7 @@ void initPhysAllocator() {
     // scratch buffer
     // it's very useful, for instance, now
     // page align it too since why not
-    uint64_t* map_4k = (uint64_t*)kernel_virt_end + (4096 - (kernel_virt_end%4096));
+    uint64_t* map_4k = (uint64_t*)(graphics::screen::backBufferEnd+ (4096 - (graphics::screen::backBufferEnd%4096)));
     uint64_t map_4k_bits = util::ceilDiv(memSize, 4*KiB);
 
     uint64_t* map_128k = map_4k + util::ceilDiv(map_4k_bits, 4);
@@ -545,6 +553,8 @@ void initPhysAllocator() {
     uint64_t *map_64m = map_2m + util::ceilDiv(map_2m_bits, 4);
     map_64m += 4096 - ((uint64_t)map_64m)%4096;
     uint64_t map_64m_bits = util::ceilDiv(memSize, 64 * MiB);
+
+    physMapEnd = (uint64_t)map_64m + util::ceilDiv(map_64m_bits, 4);
 
 
     maps[0] = map_4k;

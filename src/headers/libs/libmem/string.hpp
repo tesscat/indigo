@@ -9,5 +9,10 @@ inline bool strncmp(const char* a, const char* b, const uint64_t n) {
     }
     return true;
 }
+inline uint64_t strlen(const char* a) {
+    uint64_t n = 0;
+    while (a[n]) {n++;};
+    return n;
+}
 }
 #endif // !LIBS_LIBMEM_STRING_HPP

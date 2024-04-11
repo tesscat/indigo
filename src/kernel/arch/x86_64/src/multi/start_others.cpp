@@ -45,7 +45,7 @@ void startOthers() {
     for (uint64_t i = 0; i < nCpus; i++) {
         if (cpus[i].apicId == ebx) {
             // set our own CPU id
-            __asm__ volatile ("movw %0, %%fs" : : "rim"(i));
+            util::cpuSetMSR(MSR_FSBASE, (i & 0xffffffff), (i >> 32));
             continue;
         }
         // let it get its idx
@@ -57,20 +57,23 @@ void startOthers() {
         *apic::lapic::errorStatus = 0;
         *apic::lapic::icr1 = cpus[i].apicId << 24;
         *apic::lapic::icr0 = 0b1100010100000000;
+        // wait for delivery
+        while (*apic::lapic::icr0 & (1<<12)) {__asm__ volatile ("pause" : : : "memory");}
         // // de-assert the init IPI
         *apic::lapic::errorStatus = 0;
         *apic::lapic::icr1 = cpus[i].apicId << 24;
         *apic::lapic::icr0 = 0b1000010100000000;
+        while (*apic::lapic::icr0 & (1<<12)) {__asm__ volatile ("pause" : : : "memory");}
+        apic::apicSleep(10);
         // send SIPI twice
         graphics::psf::consoleLock.lock();
-        graphics::psf::print("Sending 2x SIPI to ");
-        util::printAsHex(cpus[i].apicId);
-        graphics::psf::print("\n");
         graphics::psf::consoleLock.release();
         for (int j = 0; j < 2; j++) {
             *apic::lapic::errorStatus = 0;
             *apic::lapic::icr1 = cpus[i].apicId << 24;
             *apic::lapic::icr0 = (0b00000000011000000000 | 0x8);
+            apic::apicSleep(1);
+            while (*apic::lapic::icr0 & (1<<12)) {__asm__ volatile ("pause" : : : "memory");}
         }
         startupLock.await();
     }

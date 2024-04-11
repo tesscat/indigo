@@ -6,7 +6,7 @@ namespace apic {
 void initLapic();
 
 #define LAPIC_BASE 0xFEE00000
-
+namespace tables {
 struct ProcessorLocalApic {
     acpi::MADTHeader header;
     uint8_t acpiProcessorId : 8;
@@ -51,7 +51,7 @@ struct ProcessorLocalx2Apic {
     uint32_t flags : 32;
     uint32_t acpiProcessorId : 32;
 } __attribute__ ((packed));
-
+}
 struct LvtRegister {
     uint8_t vectorNumber : 8;
     // TODO: what is this
@@ -74,6 +74,8 @@ void setApicTimerHz(uint64_t hz);
 void enableLapic();
 
 void apicSleep(uint64_t ms);
+
+extern acpi::MADT* madt;
 
 namespace lapic {
 #define helper_uint32(name, offs) extern uint32_t volatile* name;

@@ -6,7 +6,7 @@
 namespace libmem {
 template<typename T>
 class SlabAllocator {
-    T* values = nullptr;
+    T* values;
     // round-up
     uint64_t* bitmaps;
     uint64_t elements;
@@ -26,7 +26,7 @@ public:
 
     void Free(T* element) {
         // zero the bitmap
-        uint64_t loc = (element - values)/sizeof(T);
+        uint64_t loc = ((uint64_t)element - (uint64_t)values)/sizeof(T);
         uint64_t idx = loc/64;
         uint64_t offs = loc & 63;
         bitmaps[idx] &= ~(1 << offs);

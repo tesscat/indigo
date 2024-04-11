@@ -8,14 +8,10 @@
 
 extern KernelArgs* kargs;
 
-// little hack to get my hands on bBE
-namespace graphics {
-namespace screen {
-extern uint64_t backBufferEnd;
-}
-}
 
 namespace memory {
+// little hack to get my hands on pME
+extern uint64_t physMapEnd;
 
 // Note for when I get around to writing the slab allocator since we
 // don't ID-page the entire space:
@@ -115,9 +111,7 @@ libmem::SlabAllocator<PageTable> slab;
 //     return (uint64_t)(kpage_map_scratch) + (4*KiB)*(used_blocks-1);
 // }
 
-uint64_t hits = 0;
 uint64_t slab_allocator() {
-    hits++;
     uint64_t addr = (uint64_t)slab.Alloc();
     if (addr == 0)
         panic("Kernel paging slab out of memory");
@@ -129,7 +123,6 @@ extern "C" char _kernel_virt_end;
 
 
 void initPageAllocator() {
-    hits = 0;
     // we need to pick an address for the initial paging scratch
     uint8_t* initial_paging_scratch = (uint8_t*) allocate2mPage();
     allocate2mPage();
@@ -149,7 +142,7 @@ void initPageAllocator() {
     uint64_t curr_start_addr = (uint64_t)&_kernel_virt_start;
     // the first addr not used by the kernel or kargs
     // since the backbuffer needs to be mapped we have to cope with that one too
-    uint64_t curr_end_addr = util::roundUpToPowerOfTwo(graphics::screen::backBufferEnd, 4*KiB);
+    uint64_t curr_end_addr = util::roundUpToPowerOfTwo(physMapEnd, 4*KiB);
 
     // set up allocator for the locateOrAllocates
     // used_blocks = 1;
@@ -189,9 +182,6 @@ void initPageAllocator() {
     // we should (??) be good
     // let-sa try it!
     lcr3((uint64_t)kpgtable);
-
-
-    graphics::psf::print("\nWOOOOOO\n");
 
 }
 

@@ -6,6 +6,7 @@
 #include "memory/page_alloc.hpp"
 #include "memory/phys_alloc.hpp"
 #include "paging.hpp"
+#include "sync/time.hpp"
 #include "util/util.hpp"
 #include <multi/cpu.hpp>
 #include <memory/heap.hpp>
@@ -63,10 +64,12 @@ __attribute__ ((interrupt)) void timer(apic::InterruptFrame* frame) {
 }
 
 uint32_t ticksPerSecond;
+uint64_t tscPerMS;
+acpi::MADT* madt;
 
 void initLapic() {
     // find the LAPIC table
-    acpi::MADT* madt = (acpi::MADT*)acpi::findTable("APIC");
+    madt = (acpi::MADT*)acpi::findTable("APIC");
 
 
     // Do two passes. First pass is counting, second pass is setting
@@ -77,7 +80,7 @@ void initLapic() {
         switch (curr->type) {
             case acpi::ProcessorLocalApic : {
                 // check validity
-                ProcessorLocalApic* pla = (ProcessorLocalApic*)curr;
+                tables::ProcessorLocalApic* pla = (tables::ProcessorLocalApic*)curr;
                 if (pla->flags & 0b11)
                     multi::nCpus += 1;
                 break;
@@ -88,7 +91,7 @@ void initLapic() {
             }
             case acpi::ProcessorLocalx2Apic : {
                 // check validity
-                ProcessorLocalx2Apic* pla = (ProcessorLocalx2Apic*)curr;
+                tables::ProcessorLocalx2Apic* pla = (tables::ProcessorLocalx2Apic*)curr;
                 if (pla->flags & 0b11)
                     multi::nCpus += 1;
                 break;
@@ -107,14 +110,14 @@ void initLapic() {
     while (currCpu < multi::nCpus) {
         switch (curr->type) {
             case acpi::ProcessorLocalApic : {
-                ProcessorLocalApic* pla = (ProcessorLocalApic*)curr;
+                tables::ProcessorLocalApic* pla = (tables::ProcessorLocalApic*)curr;
                 multi::cpus[currCpu].acpiId = pla->acpiProcessorId;
                 multi::cpus[currCpu].apicId = pla->apicId;
                 currCpu++;
                 break;
             }
             case acpi::ProcessorLocalx2Apic : {
-                ProcessorLocalx2Apic* pla = (ProcessorLocalx2Apic*)curr;
+                tables::ProcessorLocalx2Apic* pla = (tables::ProcessorLocalx2Apic*)curr;
                 multi::cpus[currCpu].acpiId = pla->acpiProcessorId;
                 multi::cpus[currCpu].apicId = pla->apicId;
                 currCpu++;
@@ -152,12 +155,18 @@ void initLapic() {
     
     // QEMU doesn't give me the real thing so i guess we won't
     // TODO: fix this before we start on real hardware
+    graphics::psf::print("Crystal/bus hex: ");
+    util::printAsHex(crystal);
+    graphics::psf::print(" ");
+    util::printAsHex(bus);
+    graphics::psf::print("\n");
 
     *lapic::timerDivideConfiguration = 0x3;
     lapic::lvt::timer->clear();
     // *lapic::timerInitialCount = 0xffffff;
 
     // we need to actually measure the APIC timer freq using the PIT
+    // we measure the TSC while we're at it
     // initialise the PIT + set it up for hardware oneshot
     // some stuff about channel 2 gate status
     uint8_t gs = io::inb(0x61);
@@ -174,6 +183,8 @@ void initLapic() {
     io::inb(0x40);
     // write high
     io::outb(0x42, (div>>8)&0xff);
+    // measure tsc
+    uint64_t tsc = sync::readTsc();
     // reset the APIC timer
     *lapic::timerInitialCount = -1;
     // reset the timer (start counting)
@@ -188,12 +199,15 @@ void initLapic() {
     while ((io::inb(0x61) & 0x20) == 0) {__asm__ volatile ("pause" : : : "memory");}
     // get the current counter
     uint32_t currCount = *lapic::timerCurrentCount;
+    uint64_t tscNew = sync::readTsc();
     // the ticks elapsed in 10ms
     ticksPerSecond = 100*(((uint32_t)-1) - currCount);
     // we did use 0x3 divisor but since we keep that we can ignore it
     // enable the timer again
 
     setApicTimerHz(4);
+
+    tscPerMS = (tscNew - tsc)/10;
 
     enableLapic();
 }
@@ -213,18 +227,14 @@ void setApicTimerHz(uint64_t hz) {
 }
 
 void apicSleep(uint64_t ms) {
-#ifdef REAL_HARDWARE
     uint64_t otherMath = (*lapic::timerInitialCount - ((ticksPerSecond*ms)/1000));
     uint64_t target = (*lapic::timerCurrentCount + otherMath) % *lapic::timerInitialCount;
-    bool sign = target < *lapic::timerCurrentCount;
-    while (*lapic::timerInitialCount > target || sign) {
+    bool sign = target > *lapic::timerCurrentCount;
+    while (*lapic::timerInitialCount < target || sign) {
         if (sign)
-            sign = target < *lapic::timerCurrentCount;
+            sign = target > *lapic::timerCurrentCount;
         __asm__ volatile ("pause" : : : "memory");
     }
-#else
-    return;
-#endif
 }
 
 }

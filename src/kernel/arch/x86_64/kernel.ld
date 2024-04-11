@@ -28,6 +28,13 @@ SECTIONS
         *(.rodata)
         *(.rodata.*)
     }
+    /* the constructor shenanigansen */
+    .init_array ALIGN (4K) : AT (ADDR (.init_array) - 0xffffffff80000000) {
+        _init_array_start = .;
+        KEEP (*(SORT_BY_INIT_PRIORITY(.init_array.*) SORT_BY_INIT_PRIORITY(.ctors.*)))
+        KEEP (*(.init_array .ctors))
+        _init_array_end = .;
+    }
     .data ALIGN (4K): AT (ADDR (.data) - 0xffffffff80000000)
     {
         *(.data)

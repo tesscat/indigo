@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-void memcpy(void* dest, void* src, uint64_t n) {
+void memcpy(const void* dest, const void* src, uint64_t n) {
   // TODO: use word-alignment
   // make dest word-aligned
   // while (n > 0 && (uint64_t)dest % (sizeof(uint64_t)) != 0) {

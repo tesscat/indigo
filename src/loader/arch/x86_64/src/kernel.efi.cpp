@@ -31,7 +31,6 @@ Kernel::Kernel(const char* path, ion::RootNode* root, const char* trampPath) {
 
     uint64_t maxKAddr = 0;
 
-    printf("boutta load kernel");
     // load kernel segments
     for (int i = 0; i < header->progHeaderTableLength; i++) {
         elf::ProgHeader* prog_header = (elf::ProgHeader*)((uint8_t*)file.data + header->progHeaderPos + i*header->progEntrySize);
