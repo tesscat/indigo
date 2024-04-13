@@ -1,9 +1,10 @@
-int itoa(int value, char *sp, int radix)
-{
-    char tmp[16];// be careful with the length of the buffer
+#include <stdint.h>
+
+int itoa(int64_t value, char *sp, int radix) {
+    char tmp[22];// be careful with the length of the buffer
     char *tp = tmp;
-    int i;
-    unsigned v;
+    int64_t i;
+    uint64_t v;
 
     int sign = (radix == 10 && value < 0);    
     if (sign)

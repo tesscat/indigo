@@ -2,7 +2,9 @@
 #include "apic/idt.hpp"
 #include "apic/gdt.hpp"
 #include "apic/pic.hpp"
+#include "io/iostream.hpp"
 #include "libstd/merge_sort.hpp"
+#include "logs/logs.hpp"
 #include "memory/page_alloc.hpp"
 #include "memory/system_map.hpp"
 #include <graphics/psf.hpp>
@@ -34,8 +36,10 @@ void kernel_initialize(KernelArgs* args) {
             graphics::screen::plotPixel(x, y, pixel);
         }
     }
+    // set a stand-in CPU idx
+    util::cpuSetMSR(MSR_FSBASE, 0, 0);
     if (!kargs->fbIsBGR) {
-        graphics::psf::print("NOT BGR reported");
+        io::cout << "NOT BGR reported\n";
     }
     imsort(args->memDesc, 0, args->memDescCount);
     memory::initSystemMap(args->memDesc, static_cast<size_t>(args->memDescCount));
@@ -47,6 +51,7 @@ void kernel_initialize(KernelArgs* args) {
     apic::initGdt();
     apic::initIdt();
     memory::initHeap();
+    logs::initLogs();
     acpi::initAcpi();
     apic::initLapic();
     apic::initIOApic();
@@ -60,19 +65,14 @@ void call_global_constructors() {
 
 extern "C" void kernel_start(KernelArgs* args) {
     kernel_initialize(args);
+
     call_global_constructors();
     multi::startOthers();
     
-    graphics::psf::consoleLock.lock();
-    graphics::psf::print("kernel is finished :3\n");
-    graphics::psf::consoleLock.release();
+    logs::info << "kernel is finished :3\n";
 
     loop_forever;
 
     unimplemented();
-}
-
-__attribute__ ((constructor)) void testctor() {
-    graphics::psf::print("testctor called\n");
 }
 

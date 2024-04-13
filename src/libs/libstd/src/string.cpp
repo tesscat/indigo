@@ -2,9 +2,10 @@
 #include "libmem/string.hpp"
 #include "memory/heap.hpp"
 #include <libmem/mem.hpp>
+#include <io/iostream.hpp>
 
 bool String::operator==(String& other) {
-    for (int i = 0; i < len && i < other.len; i++) {
+    for (uint64_t i = 0; i < len && i < other.len; i++) {
         if (other[i] != base[i]) return false;
     }
     return true;

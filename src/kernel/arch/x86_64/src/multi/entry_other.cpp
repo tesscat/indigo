@@ -1,6 +1,6 @@
 #include "apic/gdt.hpp"
 #include "apic/lapic.hpp"
-#include "graphics/psf.hpp"
+#include "logs/logs.hpp"
 #include "multi/cpu.hpp"
 #include "sync/spinlock.hpp"
 #include "util/util.hpp"
@@ -37,11 +37,7 @@ extern "C" void entry_other() {
     // tell BSP we are living
     multi::startupLock.release();
     // After this we need to use locks properly
-    graphics::psf::consoleLock.lock();
-    graphics::psf::print("hello from other id: ");
-    util::printAsHex(multi::getCpuIdx());
-    graphics::psf::print("\n");
-    graphics::psf::consoleLock.release();
+    logs::info << "hello from other id: " << multi::getCpuIdx() << '\n';
 
     loop_forever;
 }

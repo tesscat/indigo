@@ -2,25 +2,42 @@
 #define KERNEL_INATOR_INATOR_HPP
 
 #include "libstd/string.hpp"
+#include "util/map.hpp"
 #include "util/vec.hpp"
 namespace inator {
 void init();
 
-struct Node {
+struct Target {
     String name;
-    String* dependencies;
-    String* provides;
+    uint64_t nDeps, nProvides;
+    util::Vec<String> dependencies;
+    util::Vec<String> provides;
+    uint64_t preference;
     int (*load)();
+    bool operator<(Target& other) {
+        // reversed since imsort sorts ascending
+        return preference > other.preference;
+    }
+    Target() = default;
+    Target& operator=(Target& other) = default;
 };
 struct Graph {
     friend void inator::init();
-    util::Vec<Node> nodes;
-    bool hasInited;
+    util::Map<String, Target> targets;
+    util::Map<String, util::Vec<Target>> providers;
+    util::Vec<Target> loadedTargets;
+    util::Vec<String> loadedProviders;
+    util::Vec<String> rejects;
     void init();
+    int tryLoadTarget(String name, util::Vec<String>& depStack);
+    int tryLoadProvider(String name, util::Vec<String>& depStack);
 public:
-    void addNode(Node node);
+    void addTarget(Target target);
     int tryLoadTarget(String name);
-    int tryLoadProvider(String name);
+    void finalizeGraph();
+};
+struct Node {
+
 };
 }
 

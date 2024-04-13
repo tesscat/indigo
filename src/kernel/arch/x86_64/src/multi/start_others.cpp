@@ -66,8 +66,6 @@ void startOthers() {
         while (*apic::lapic::icr0 & (1<<12)) {__asm__ volatile ("pause" : : : "memory");}
         apic::apicSleep(10);
         // send SIPI twice
-        graphics::psf::consoleLock.lock();
-        graphics::psf::consoleLock.release();
         for (int j = 0; j < 2; j++) {
             *apic::lapic::errorStatus = 0;
             *apic::lapic::icr1 = cpus[i].apicId << 24;

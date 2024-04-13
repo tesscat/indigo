@@ -4,6 +4,10 @@
 // https://stackoverflow.com/questions/2571049/how-to-sort-in-place-using-the-merge-sort-algorithm
 
 template<typename T>
+void swap(T* xs, int i, int j) {
+    T tmp = xs[i]; xs[i] = xs[j]; xs[j] = tmp;
+}
+template<typename T>
 void wmerge(T* xs, int i, int m, int j, int n, int w) {
     while (i < m && j < n)
         swap(xs, w++, xs[i] < xs[j] ? i++ : j++);
@@ -16,10 +20,6 @@ void wmerge(T* xs, int i, int m, int j, int n, int w) {
 template<typename T>
 void imsort(T* xs, int l, int u);
 
-template<typename T>
-void swap(T* xs, int i, int j) {
-    T tmp = xs[i]; xs[i] = xs[j]; xs[j] = tmp;
-}
 
 /* 
  * sort xs[l, u), and put result to working area w. 

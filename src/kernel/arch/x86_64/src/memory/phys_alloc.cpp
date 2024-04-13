@@ -529,9 +529,6 @@ void initPhysAllocator() {
     for (uint64_t sect : sectSizes) {
         mapSize += util::ceilDiv(memSize, sect);
     }
-    graphics::psf::print("Memory is: ");
-    util::printAsHex(memSize);
-    graphics::psf::print("\n");
     // mapSize is now one byte for every bitmap entry
     mapSize = util::ceilDiv(mapSize, 4);
 

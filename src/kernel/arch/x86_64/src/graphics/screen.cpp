@@ -42,8 +42,6 @@ void initScreen() {
     if (works) {
         backBuffer = (uint32_t*) candidates[i];
         backBufferEnd = candidates[i] + sizeof(uint32_t)*kargs->fbWidth*kargs->fbHeight;
-        // graphics::psf::putchar('1' + i, 10, 10, 0x00FFFFFF, 0x00000000);
-        // while(1);
     } else {
         // better hope it doesn't scroll
         graphics::psf::putchar('X', 10, 10, 0x00FFFFFF, 0x00000000);

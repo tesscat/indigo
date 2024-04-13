@@ -51,15 +51,6 @@ inline uint64_t roundUpToPowerOfTwo(uint64_t numToRound, uint64_t multipleToRoun
     return (numToRound + multipleToRoundTo - 1) & (-multipleToRoundTo);
 }
 
-inline void printAsHex(int n, int l = 16) {
-    char sp[16];
-    int f = itoa(n, sp, 16);
-    sp[f] = '\0';
-    graphics::psf::print("0x");
-    for (int j = 0; j < (l-f); j++) graphics::psf::print("0");
-    graphics::psf::print(sp);
-}
-
 #define MSR_FSBASE 0xC0000100
 inline void cpuSetMSR(uint32_t msr, uint32_t lo, uint32_t hi) {
    asm volatile("wrmsr" : : "a"(lo), "d"(hi), "c"(msr));
@@ -68,7 +59,20 @@ inline void cpuSetMSR(uint32_t msr, uint32_t lo, uint32_t hi) {
 inline void cpuGetMSR(uint32_t msr, uint32_t *lo, uint32_t *hi) {
    asm volatile("rdmsr" : "=a"(*lo), "=d"(*hi) : "c"(msr));
 }
+template<typename A, typename B>
+struct Pair {
+    A first;
+    B second;
+};
 
+template<typename A>
+struct Optional {
+    bool hasVal;
+    union {uint8_t _; A val;} data;
+    A get() {return data.val;}
+    Optional() : hasVal{false} {}
+    Optional(A val_) : hasVal{true}, data{val_} {}
+};
 }
 
 #endif // !KERNEL_UTIL_UTIL_HPP

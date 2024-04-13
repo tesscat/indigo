@@ -1,6 +1,7 @@
 #include "defs.hpp"
 #include "memory/page_alloc.hpp"
 #include "memory/phys_alloc.hpp"
+#include "sync/spinlock.hpp"
 #include "util/util.hpp"
 #include <stdint.h>
 #include <libmem/mem.hpp>
@@ -19,8 +20,12 @@ uint64_t len;
 MemHeader* heap_start;
 MemHeader* first_hole;
 
+sync::Spinlock heapLock;
+
 
 void initHeap() {
+    heapLock.init();
+    heapLock.release();
     // find some memory
     // allocate in 2MiB blocks so we need to mess the map up less
     physBase = allocate2mPage();
@@ -72,7 +77,9 @@ void* Allocate(uint64_t size, MemHeader* search_from = first_hole) {
         last = curr;
         curr = curr->next;
     }
-    if (curr == nullptr) return TryExpandAndReAllocate(size, last);
+    if (curr == nullptr) {
+        return TryExpandAndReAllocate(size, last);
+    }
     // we have one!
     // is it a replace or is it a split?
     if (curr->size == size) {
@@ -106,6 +113,7 @@ void TryMergeWithSuccessor(MemHeader* mh) {
 
 }
 void kfree(const void* addr) {
+    memory::heapLock.lock();
     using namespace memory;
     // addr better be a MemHeader cuz imma cry if its not
     MemHeader* mh = (MemHeader*) addr - sizeof(MemHeader);
@@ -123,13 +131,16 @@ void kfree(const void* addr) {
     if ((uint64_t)mh < (uint64_t)first_hole) {
         first_hole = mh;
     }
-
+    memory::heapLock.release();
     return;
 }
 
 void* kmalloc(const uint64_t size) {
     using namespace memory;
-    return Allocate(size, first_hole);
+    memory::heapLock.lock();
+    void* a = Allocate(size, first_hole);
+    memory::heapLock.release();
+    return a;
 }
 
 void* krealloc(const void* addr, const uint64_t size) {
@@ -142,3 +153,20 @@ void* krealloc(const void* addr, const uint64_t size) {
     return a2;
 }
 
+#include <stddef.h>
+
+void* operator new(size_t size) {
+    return kmalloc(size);
+}
+
+void* operator new[](size_t size) {
+    return kmalloc(size);
+}
+
+void operator delete(void *p) {
+    kfree(p);
+}
+
+void operator delete[](void *p) {
+    kfree(p);
+}

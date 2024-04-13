@@ -14,7 +14,7 @@ _KERNEL_CPP_OBJ := $(KERNEL_CPP_SRC_FILES:.cpp=.o)
 KERNEL_CPP_OBJ := $(shell echo " $(_KERNEL_CPP_OBJ)" | sed "s| $(SRC_DIR)| $(BUILD_DIR)|g")
 
 
-INC_FLAGS := $(INC_FLAGS) -I$(KERNEL_ARCH_DIR)/headers -I$(SRC_DIR)/headers/common  -Ivendor/lai/include
+INC_FLAGS := $(INC_FLAGS) -I$(KERNEL_ARCH_DIR)/headers -I$(SRC_DIR)/headers/common
 
 MKISO := grub-mkrescue
 

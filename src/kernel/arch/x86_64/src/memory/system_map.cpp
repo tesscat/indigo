@@ -1,20 +1,10 @@
 #include "defs.hpp"
-#include "graphics/psf.hpp"
 #include "loader/memory_descriptor.hpp"
 #include <cstdint>
 #include <memory/system_map.hpp>
 #include <libstd/itoa.hpp>
 
 namespace memory {
-
-void printAsHex(int n, int l = 16) {
-    char sp[16];
-    int f = itoa(n, sp, 16);
-    sp[f] = '\0';
-    graphics::psf::print("0x");
-    for (int j = 0; j < (l-f); j++) graphics::psf::print("0");
-    graphics::psf::print(sp);
-}
 
 extern "C" char _kernel_virt_start;
 extern "C" char _kernel_virt_end;
@@ -106,32 +96,6 @@ void initSystemMap(MemoryDescriptor* mDescs, size_t mDescsCount) {
     }
 
     memMapLen = curr_idx;
-
-#ifdef DEBUG_OUTPUT
-
-    uint64_t tUsable = 0;
-    uint64_t tKernel = 0;
-
-    graphics::psf::print("\nFull data:\n");
-    for (int i =0; i < curr_idx; i++) {
-        graphics::psf::print("\n");
-        printAsHex(memMap[i].start);
-
-        int end = memMap[i].start + memMap[i].len;
-        graphics::psf::print(" | ");
-        printAsHex(end);
-        graphics::psf::print(" | ");
-        graphics::psf::print(memMap[i].type == Free ? "Free" : "Kernel");
-        tUsable += memMap[i].len;
-        if (memMap[i].type == Kernel) tKernel += memMap[i].len;
-    }
-
-
-    graphics::psf::print("\nTotal usable: ");
-    printAsHex(tUsable);
-    graphics::psf::print("\nTotal used by kernel: ");
-    printAsHex(tKernel);
-#endif
 }
 
 }

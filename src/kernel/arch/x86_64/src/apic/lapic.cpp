@@ -3,6 +3,7 @@
 #include "apic/idt.hpp"
 #include "graphics/psf.hpp"
 #include "io/io.hpp"
+#include "logs/logs.hpp"
 #include "memory/page_alloc.hpp"
 #include "memory/phys_alloc.hpp"
 #include "paging.hpp"
@@ -56,7 +57,6 @@ __attribute__ ((interrupt)) void spurious(apic::InterruptFrame* frame) {
     loop_forever;
 }
 __attribute__ ((interrupt)) void timer(apic::InterruptFrame* frame) {
-    graphics::psf::print("ee\n");
     // serve EOI
     *lapic::eoi = 0;
     return;
@@ -153,13 +153,7 @@ void initLapic() {
     __cpuid(0x15, eax, unused, crystal, unused);
     __cpuid(0x16, eax, unused, bus, unused);
     
-    // QEMU doesn't give me the real thing so i guess we won't
-    // TODO: fix this before we start on real hardware
-    graphics::psf::print("Crystal/bus hex: ");
-    util::printAsHex(crystal);
-    graphics::psf::print(" ");
-    util::printAsHex(bus);
-    graphics::psf::print("\n");
+    // TODO: better timing than the PIC please
 
     *lapic::timerDivideConfiguration = 0x3;
     lapic::lvt::timer->clear();
