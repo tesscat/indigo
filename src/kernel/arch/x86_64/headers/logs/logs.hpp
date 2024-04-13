@@ -8,8 +8,8 @@
 namespace logs {
 class Logger : public io::sstream {
     friend void initLogs();
-    util::Vec<util::Vec<char>*> buff;
-    util::Vec<char>* currBuff();
+    util::ManualVec<util::Vec<char>> buff;
+    util::Vec<char>& currBuff();
     bool hasInit;
     void init();
 public:

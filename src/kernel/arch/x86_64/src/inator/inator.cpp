@@ -1,4 +1,5 @@
 #include "inator/inator.hpp"
+#include "logs/logs.hpp"
 #include "memory/heap.hpp"
 #include "util/vec.hpp"
 namespace inator {
@@ -25,9 +26,9 @@ void Graph::finalizeGraph() {
         for (uint64_t j = 0; j < targ.provides.len; j++) {
             String& prov = targ.provides[j];
             if (!providers.hasKey(prov)) {
-                providers.set(prov, util::Vec<Target>());
+                providers.set(prov, util::Vec<Target*>());
             }
-            providers.get(prov).Append(targ);
+            providers.get(prov).Append(&targ);
         }
     }
     // okie now sort them
@@ -55,7 +56,7 @@ int Graph::tryLoadTarget(String name, util::Vec<String>& depStack) {
     // load it itself
     int n = target.load();
     if (n != 0) rejects.Append(name);
-    else loadedTargets.Append(target);
+    else loadedTargets.Append(&target);
     return n;
 }
 
@@ -65,10 +66,10 @@ int Graph::tryLoadProvider(String provider, util::Vec<String>& depStack) {
     // try and load a dep handler that isn't in the rejects stack,
     // isn't in depStack (else would be circular), and we haven't already tried
     if (!providers.hasKey(provider)) return -1;
-    util::Vec<Target>& targs = providers.get(provider);
+    util::Vec<Target*>& targs = providers.get(provider);
     for (uint64_t i = 0; i < targs.len; i++) {
         // are we in rejects/depStack?
-        String& name = targs[i].name;
+        String& name = targs[i]->name;
         if (depStack.Contains(name) || rejects.Contains(name)) continue;
         // try it!
         int n = tryLoadTarget(name, depStack);
@@ -88,4 +89,36 @@ int Graph::tryLoadTarget(String name) {
     util::Vec<String> depStack;
     return tryLoadTarget(name, depStack);
 }
+
+// some example targets to test
+int l0() {
+    logs::info << "l0() called\n";
+    return 0;
+}
+__attribute__ ((constructor)) void t0() {
+    Target t0;
+    t0.name = String("t0");
+    t0.provides.Append(String("p2"));
+    t0.preference = 10;
+    t0.load = l0;
+
+    graph->addTarget(t0);
+}
+int l1() {
+    logs::info << "l1() called\n";
+    return 0;
+}
+__attribute__ ((constructor)) void t1() {
+    Target t1;
+    t1.name = String("t1");
+    t1.provides.Append(String("p1"));
+    t1.dependencies.Append(String("p2"));
+    t1.preference = 10;
+    t1.load = l1;
+
+    graph->addTarget(t1);
+}
+
+
+
 }

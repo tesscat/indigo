@@ -17,6 +17,14 @@ char String::operator[](int n) {
 
 String::String(const char* a) {
     len = libmem::strlen(a);
-    base = (char*)kmalloc(len);
-    memcpy(base, a, len);
+    if (len != 0) {
+        base = (char*)kmalloc(len+1);
+        memcpy(base, a, len);
+        base[len] = '\0';
+    }
+}
+
+String::String() {
+    len = 0;
+    base = nullptr;
 }

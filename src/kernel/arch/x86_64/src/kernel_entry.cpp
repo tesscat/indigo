@@ -2,6 +2,7 @@
 #include "apic/idt.hpp"
 #include "apic/gdt.hpp"
 #include "apic/pic.hpp"
+#include "inator/inator.hpp"
 #include "io/iostream.hpp"
 #include "libstd/merge_sort.hpp"
 #include "logs/logs.hpp"
@@ -55,6 +56,7 @@ void kernel_initialize(KernelArgs* args) {
     acpi::initAcpi();
     apic::initLapic();
     apic::initIOApic();
+    inator::init();
 }
 
 void call_global_constructors() {
@@ -67,6 +69,8 @@ extern "C" void kernel_start(KernelArgs* args) {
     kernel_initialize(args);
 
     call_global_constructors();
+    inator::graph->finalizeGraph();
+    logs::info << "tlt " << inator::graph->tryLoadTarget("t1") << '\n';
     multi::startOthers();
     
     logs::info << "kernel is finished :3\n";

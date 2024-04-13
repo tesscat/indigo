@@ -5,8 +5,8 @@
 namespace util {
 template<typename K, typename V>
 class Map {
-    util::Vec<K> keys_;
-    util::Vec<V> values_;
+    util::ManualVec<K> keys_;
+    util::ManualVec<V> values_;
     bool hasInit;
 public:
     void init() {
@@ -37,8 +37,8 @@ public:
             values_.Append(val);
         }
     }
-    util::Vec<K>& keys() {return keys_;};
-    util::Vec<V>& values() {return values_;};
+    util::ManualVec<K>& keys() {return keys_;};
+    util::ManualVec<V>& values() {return values_;};
 };
 }
 

@@ -7,11 +7,11 @@
 namespace inator {
 void init();
 
+
 struct Target {
     String name;
-    uint64_t nDeps, nProvides;
-    util::Vec<String> dependencies;
-    util::Vec<String> provides;
+    util::ManualVec<String> dependencies;
+    util::ManualVec<String> provides;
     uint64_t preference;
     int (*load)();
     bool operator<(Target& other) {
@@ -24,10 +24,10 @@ struct Target {
 struct Graph {
     friend void inator::init();
     util::Map<String, Target> targets;
-    util::Map<String, util::Vec<Target>> providers;
-    util::Vec<Target> loadedTargets;
-    util::Vec<String> loadedProviders;
-    util::Vec<String> rejects;
+    util::Map<String, util::Vec<Target*>> providers;
+    util::ManualVec<Target*> loadedTargets;
+    util::ManualVec<String> loadedProviders;
+    util::ManualVec<String> rejects;
     void init();
     int tryLoadTarget(String name, util::Vec<String>& depStack);
     int tryLoadProvider(String name, util::Vec<String>& depStack);
@@ -36,9 +36,8 @@ public:
     int tryLoadTarget(String name);
     void finalizeGraph();
 };
-struct Node {
 
-};
+extern Graph* graph;
 }
 
 #endif // !KERNEL_INATOR_INATOR_HPP

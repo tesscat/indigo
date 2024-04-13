@@ -347,9 +347,9 @@ void freeBlockAt64m(uint64_t start, uint64_t size) {
 
 // returns the index of the first partially free 64m block
 // or -1 if not found
-uint64_t findFirstPartial64mIdx() {
+uint64_t findFirstPartial64mIdx(uint64_t from = 0) {
     // we can check 32 at a time
-    for (uint64_t idx = 0; idx < mapSizes[3]/32; idx++) {
+    for (uint64_t idx = from; idx < mapSizes[3]/32; idx++) {
         uint64_t currBatch = maps[3][idx];
         // we want a 0 in the high slot
         currBatch = ~currBatch;
@@ -404,6 +404,9 @@ uint64_t findFirstPartial2mIdxWithin64m(uint64_t idx_64m) {
         while ((0b10 & currBatch) == 0) {
             shiftIdx += 1;
             currBatch = currBatch >> 2;
+            if (shiftIdx > 32) {
+                return findFirstPartial2mIdxWithin64m(findFirstPartial64mIdx(idx_64m+1));
+            }
         }
         return shiftIdx + idx_64m*32;
     }
@@ -424,6 +427,9 @@ uint64_t findFirstFullyFree2mIdxWithin64m(uint64_t idx_64m) {
         while ((0b01 & currBatch) == 0) {
             shiftIdx += 1;
             currBatch = currBatch >> 2;
+            if (shiftIdx > 32) {
+                return findFirstFullyFree2mIdxWithin64m(findFirstPartial64mIdx(idx_64m+1));
+            }
         }
         return shiftIdx + idx_64m*32;
     }

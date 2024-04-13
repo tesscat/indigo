@@ -73,7 +73,7 @@ void* Allocate(uint64_t size, MemHeader* search_from = first_hole) {
     uint64_t acc_size = size + sizeof(MemHeader);
     MemHeader* curr = search_from;
     MemHeader* last = curr;
-    while ((curr->used || (curr->size < acc_size && curr->size != size)) && curr != nullptr) {
+    while (curr != nullptr && (curr->used || (curr->size < acc_size && curr->size != size))) {
         last = curr;
         curr = curr->next;
     }
@@ -107,7 +107,8 @@ void TryMergeWithSuccessor(MemHeader* mh) {
     if (mh->next->used) return;
     // go for merge!
     mh->size += mh->next->size + sizeof(MemHeader);
-    mh->next->next->prev = mh;
+    if (mh->next->next)
+        mh->next->next->prev = mh;
     mh->next = mh->next->next;
 }
 
@@ -148,7 +149,9 @@ void* krealloc(const void* addr, const uint64_t size) {
     // TODO: check successor to see if we can flat expand
     MemHeader* mh = (MemHeader*) addr - sizeof(MemHeader);
     void* a2 = kmalloc(size);
-    memcpy(a2, addr, mh->size);
+    uint64_t s2 = size;
+    if (mh->size < size) s2 = mh->size; 
+    memcpy(a2, addr, s2);
     kfree(addr);
     return a2;
 }
