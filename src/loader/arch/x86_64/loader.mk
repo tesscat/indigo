@@ -65,25 +65,15 @@ $(BUILD_DIR)/$(PROJECT).bin: $(BUILD_DIR)/$(LOADER_NAME).img
 $(OUT_DIR)/$(PROJECT).bin: $(BUILD_DIR)/$(PROJECT).bin
 	mv $< $@
 
-# ifdef $(DEBUG)
+
+QEMU_ARGS := -m 16G -bios /usr/share/edk2-ovmf/x64/OVMF.fd -net none -monitor stdio -d int,guest_errors -no-reboot -no-shutdown -smp 8
+
 # Run (verbose debug)
-
-QEMU_ARGS := -m 16G -s -S -bios /usr/share/edk2-ovmf/x64/OVMF.fd -net none -monitor stdio -d int,guest_errors -no-reboot -no-shutdown -smp 8
-
 run_dbg: $(OUT_DIR)/$(PROJECT).bin
-	kitty qemu-system-$(ARCH) $(QEMU_ARGS) -drive file=$(shell pwd)/$^,format=raw &
+	kitty qemu-system-$(ARCH) -s -S $(QEMU_ARGS) -drive file=$(shell pwd)/$^,format=raw &
 	lldb $(OUT_DIR)/kernel $(OUT_DIR)/trampoline $(OUT_DIR)/$(LOADER_NAME).efi -o 'gdb-remote localhost:1234'
 
-run_dbg_loader: $(OUT_DIR)/$(PROJECT).bin
-	kitty qemu-system-$(ARCH) -m 2G -s -S -bios /usr/share/edk2-ovmf/x64/OVMF.fd -net none -drive file=$(shell pwd)/$^,format=raw -monitor stdio -d int,guest_errors -no-reboot -no-shutdown &
-	lldb $(OUT_DIR)/$(LOADER_NAME).efi -o 'gdb-remote localhost:1234'
 
 # Run (normal)
 run: $(OUT_DIR)/$(PROJECT).bin
-	qemu-system-$(ARCH) -m 2G -s -S -bios /usr/share/edk2-ovmf/x64/OVMF.fd -net none -drive file=$(shell pwd)/$^,format=raw -no-reboot -no-shutdown &
-	lldb $(OUT_DIR)/kernel $(OUT_DIR)/trampoline $(OUT_DIR)/$(LOADER_NAME).efi -o 'gdb-remote localhost:1234'
-
-# else
-# run: $(OUT_DIR)/$(PROJECT).bin
-	# qemu-system-$(ARCH) -bios /usr/share/edk2-ovmf/x64/OVMF.fd -net none -hda $^
-# endif
+	qemu-system-$(ARCH) $(QEMU_ARGS) -drive file=$(shell pwd)/$^,format=raw

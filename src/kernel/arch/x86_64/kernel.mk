@@ -16,8 +16,6 @@ KERNEL_CPP_OBJ := $(shell echo " $(_KERNEL_CPP_OBJ)" | sed "s| $(SRC_DIR)| $(BUI
 
 INC_FLAGS := $(INC_FLAGS) -I$(KERNEL_ARCH_DIR)/headers -I$(SRC_DIR)/headers/common
 
-MKISO := grub-mkrescue
-
 KERNEL_DEPS := $(OUT_DIR)/libstd.a $(OUT_DIR)/libmem.a
 
 KERNEL_OBJS := $(KERNEL_SILVER_OBJ) $(KERNEL_AS_OBJ) $(KERNEL_CPP_OBJ) $(BUILD_DIR)/$(KERNEL_NAME)/arch/$(ARCH)/font.o $(KERNEL_DEPS)
