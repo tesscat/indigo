@@ -22,13 +22,6 @@ The current focus is kernel modules, which we'll use to make an initramfs-stored
 other modules which will contain everything else, from Actual Modules (shared objs, not just non-relocated objects)
 to the scheduler and multi-processing management stuff.
 We've also got a depencency-graph style loader, so we can write modules for everything and only load the ones which are actually required.
-#### Plan:
-there is no proper plan.  
-I need to:
-[X] implement a _page_ allocator/tracker atop the phys address allocator, with which I can:
-- - ask for N contiguous bytes of memory, optionally at a specific physical address
-- - specify which virtual address this should be mapped to
-- - handle freeing of pages
 
 ### Installing and running this:
 #### Installing
