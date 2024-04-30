@@ -1,5 +1,4 @@
 #include "memmap.hpp"
-#include "uefi.h"
 
 uint64_t getMemmapSize() {
     // uint64_t mmapSize;

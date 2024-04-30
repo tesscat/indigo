@@ -2,7 +2,7 @@ DEBUG := 1
 
 PROJECT := indigo
 
- # TODO: redo link-specific flags
+# TODO: redo link-specific flags
 ARCH := x86_64
 BUILD_DIR := build
 OUT_DIR := out
@@ -38,7 +38,7 @@ SILVERC := x
 SILVERC_2 := clang
 SILVERC_2_FLAGS := -ffreestanding -Wall -Wextra -fno-exceptions -fno-rtti
 
-BASE_FLAGS := $(INC_FLAGS) -ffreestanding -nostdlib -mno-red-zone -mno-sse -mno-sse2 -mno-mmx -mno-avx -fno-rtti -Wall -Wextra -fno-exceptions
+BASE_FLAGS := $(INC_FLAGS) -ffreestanding -nostdlib -mno-red-zone -mno-sse -mno-sse2 -mno-mmx -mno-avx -fno-rtti -Wall -Wextra -fno-exceptions -D_STDINT_H=1
 AS_FLAGS := $(BASE_FLAGS)
 
 LD_FLAGS := -nostdlib --no-pie

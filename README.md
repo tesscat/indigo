@@ -1,9 +1,5 @@
-sane coding conventions:
-- CONSTS\_IN\_SCREAMING\_SNAKE
-- variables\_in\_snake
-- TypesInPascal
-- functionsInCamel
-- membersInCamel
+# Indigo
+This is a _toy/educational_ OS/kernel I made for the sole purpose of learning how these work and how one goes about making them.
 
 ### Basic anatomy:
 Most (all) of the code is in the `src/` directory, with subdirs containing different "bits":
@@ -29,7 +25,8 @@ We've also got a depencency-graph style loader, so we can write modules for ever
 ### Installing and running this:
 #### Installing
 If you received this via `git clone` then the git stuff should be setup, otherwise run `git init` as normal.
-Install the (singular) runtime dependency with `git submodule init && git submodule update`  
+Install the (singular) runtime dependency with `git submodule init && git submodule update`. The only change that's been made to submodules is the removal
+of line 73 of `vendor/posix-uefi/uefi/uefi.h` (the `wchar_t` def), which you might need to do. (TODO: fork posix-uefi)
 This project has a large number of build dependencies, most of which I cannot remember. Off the top of my head you may need:
 - clang/clang++ & GNU Make
 - ld.lld (I think this comes with clang)
@@ -43,3 +40,10 @@ This project is by no means guaranteed to work on your machine.
 It also probably wants a Linux environment, I have no idea if this works under cygwin/WSL.
 To run, just invoke `make run` to run without debugging, or `make run_dbg` to launch the same image with QEMU bound to a LLDB session.
 
+### legacy content for legacy me:
+sane coding conventions:
+- CONSTS\_IN\_SCREAMING\_SNAKE
+- variables\_in\_snake
+- TypesInPascal
+- functionsInCamel
+- membersInCamel
