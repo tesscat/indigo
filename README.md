@@ -14,6 +14,9 @@ in the address space (in accordance with relocation model = kernel), and then ca
 - `src/kernel` is the "actual" kernel which handles everything else.
 - `src/libs` is code I wrote when I didn't know where to put code, and might eventually vanish, but fttb it's a libraries directory
 for things I might find useful. It has some overlap with kernel's `utils` subdir though.
+#### Deps
+The only code dependency this thing has is `posix-uefi` from `bzt (bztsrc@gitlab)`, which is used in `loader` only
+to make programming under UEFI more palatable.
 
 ### Progress:
 So far, the OS boots, handles 64-bit mode, and starts up all other cores detected,
