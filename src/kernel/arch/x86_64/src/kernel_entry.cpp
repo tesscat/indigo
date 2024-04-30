@@ -65,13 +65,23 @@ void call_global_constructors() {
     }
 }
 
+inline void printAsHex(uint64_t n, int l = 16) {
+    char sp[16];
+    int f = itoa(n, sp, 16);
+    sp[f] = '\0';
+    graphics::psf::print("0x");
+    for (int j = 0; j < (l-f); j++) graphics::psf::print("0");
+    graphics::psf::print(sp);
+    graphics::psf::print("\n");
+}
+
 extern "C" void kernel_start(KernelArgs* args) {
     kernel_initialize(args);
 
     call_global_constructors();
     inator::graph->finalizeGraph();
-    logs::info << "tlt " << inator::graph->tryLoadTarget("t1") << '\n';
-    multi::startOthers();
+
+    logs::info << "smp " << inator::graph->tryLoadTarget("smp") << '\n';
     
     logs::info << "kernel is finished :3\n";
 

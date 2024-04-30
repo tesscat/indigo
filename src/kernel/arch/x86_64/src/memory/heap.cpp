@@ -9,11 +9,22 @@
 namespace memory {
 
 struct MemHeader {
+    uint8_t s1;
     bool used;
     MemHeader* prev;
     MemHeader* next;
     uint64_t size;
-};
+    uint8_t s2;
+    inline void setSan() {
+        this->s1 = ':';
+        this->s2 = '3';
+    }
+    inline void checkSan() {
+        if (this->s1 != ':' || this->s2 != '3') {
+            panic("oops")
+        }
+    }
+} __attribute__ ((packed));
 
 uint64_t physBase;
 uint64_t len;
@@ -37,6 +48,7 @@ void initHeap() {
     heap_start->prev = nullptr;
     heap_start->next = nullptr;
     heap_start->size = 2*MiB - sizeof(MemHeader);
+    heap_start->setSan();
 
     first_hole = heap_start;
 }
@@ -59,6 +71,7 @@ void* TryExpandAndReAllocate(uint64_t size, MemHeader* last) {
         newLast->prev = last;
         newLast->next = nullptr;
         newLast->size = blocks*2*MiB - sizeof(MemHeader);
+        newLast->setSan();
         last->next = newLast;
         last = newLast;
     } else {
@@ -71,9 +84,13 @@ void* TryExpandAndReAllocate(uint64_t size, MemHeader* last) {
 void* Allocate(uint64_t size, MemHeader* search_from = first_hole) {
     // Find the first one that's enough
     uint64_t acc_size = size + sizeof(MemHeader);
-    MemHeader* curr = search_from;
+    MemHeader* curr = (MemHeader*)HEAP_VIRTUAL_BASE;
     MemHeader* last = curr;
+    MemHeader* llast = curr;
+    curr->checkSan();
     while (curr != nullptr && (curr->used || (curr->size < acc_size && curr->size != size))) {
+        curr->checkSan();
+        llast = last;
         last = curr;
         curr = curr->next;
     }
@@ -85,7 +102,7 @@ void* Allocate(uint64_t size, MemHeader* search_from = first_hole) {
     if (curr->size == size) {
         // replace
         curr->used = true;
-        return curr + sizeof(MemHeader);
+        return ((uint8_t*)curr) + sizeof(MemHeader);
     } else {
         // split time
         // make the new hole
@@ -94,11 +111,15 @@ void* Allocate(uint64_t size, MemHeader* search_from = first_hole) {
         new_hole->prev = curr;
         new_hole->next = curr->next;
         new_hole->size = curr->size - acc_size;
+        new_hole->setSan();
         // update this one
         curr->used = true;
         curr->next = new_hole;
         curr->size = size;
-        return curr + sizeof(MemHeader);
+        // vehement despising of pointer mathematics
+        // WHY does (Thing*)curr + 27 return (uint64_t)curr + 27*sizeof(Thing)
+        // i want my maths to maths like maths should maths!!!!!!
+        return ((uint8_t*)curr) + sizeof(MemHeader);
     }
 }
 
@@ -117,16 +138,20 @@ void kfree(const void* addr) {
     memory::heapLock.lock();
     using namespace memory;
     // addr better be a MemHeader cuz imma cry if its not
-    MemHeader* mh = (MemHeader*) addr - sizeof(MemHeader);
-    if (!mh->used) return;
+    MemHeader* mh = (MemHeader*) ((uint8_t*)addr - sizeof(MemHeader));
+    if (!mh->used) {
+        memory::heapLock.release();
+        return;
+    }
+    mh->used = false;
     // try merge forwards
     if (mh->next) {
-        TryMergeWithSuccessor(mh);
+        // TryMergeWithSuccessor(mh);
     }
     // try merge backwards
     if (mh->prev && !mh->prev->used) {
-        TryMergeWithSuccessor(mh->prev);
-        mh = mh->prev;
+        // TryMergeWithSuccessor(mh->prev);
+        // mh = mh->prev;
     }
 
     if ((uint64_t)mh < (uint64_t)first_hole) {
@@ -147,7 +172,7 @@ void* kmalloc(const uint64_t size) {
 void* krealloc(const void* addr, const uint64_t size) {
     using namespace memory;
     // TODO: check successor to see if we can flat expand
-    MemHeader* mh = (MemHeader*) addr - sizeof(MemHeader);
+    MemHeader* mh = (MemHeader*) ((uint8_t*)addr - sizeof(MemHeader));
     void* a2 = kmalloc(size);
     uint64_t s2 = size;
     if (mh->size < size) s2 = mh->size; 

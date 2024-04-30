@@ -10,8 +10,8 @@ void init();
 
 struct Target {
     String name;
-    util::ManualVec<String> dependencies;
-    util::ManualVec<String> provides;
+    util::Vec<String> dependencies;
+    util::Vec<String> provides;
     uint64_t preference;
     int (*load)();
     bool operator<(Target& other) {
@@ -19,6 +19,7 @@ struct Target {
         return preference > other.preference;
     }
     Target() = default;
+    Target(Target& other) = default;
     Target& operator=(Target& other) = default;
 };
 struct Graph {

@@ -1,4 +1,5 @@
 #include "apic/lapic.hpp"
+#include "inator/inator.hpp"
 #include "memory/heap.hpp"
 #include "memory/page_alloc.hpp"
 #include "memory/phys_alloc.hpp"
@@ -26,7 +27,7 @@ void setupTrampolineCode() {
     *(uint64_t*)(0x8f00) = (uint64_t)memory::kpgtable;
 }
 
-void startOthers() {
+int startOthers() {
     setupTrampolineCode();
     // get my own lapic ID so i don't start myself
     unsigned int ebx, eax, unused;
@@ -75,5 +76,17 @@ void startOthers() {
         }
         startupLock.await();
     }
+    return 0;
+}
+
+// submit this to the graph
+__attribute__ ((constructor)) void submitSMP() {
+    inator::Target t;
+    t.name = String("smp");
+    t.provides.Append(String("smp"));
+    t.preference = 1;
+    t.load = startOthers;
+
+    inator::graph->addTarget(t);
 }
 }
