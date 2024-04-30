@@ -81,7 +81,7 @@ extern "C" void kernel_start(KernelArgs* args) {
     call_global_constructors();
     inator::graph->finalizeGraph();
 
-    logs::info << "smp " << inator::graph->tryLoadTarget("smp") << '\n';
+    inator::graph->tryLoadTarget("smp");
     
     logs::info << "kernel is finished :3\n";
 

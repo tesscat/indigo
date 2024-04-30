@@ -9,21 +9,10 @@
 namespace memory {
 
 struct MemHeader {
-    uint8_t s1;
     bool used;
     MemHeader* prev;
     MemHeader* next;
     uint64_t size;
-    uint8_t s2;
-    inline void setSan() {
-        this->s1 = ':';
-        this->s2 = '3';
-    }
-    inline void checkSan() {
-        if (this->s1 != ':' || this->s2 != '3') {
-            panic("oops")
-        }
-    }
 } __attribute__ ((packed));
 
 uint64_t physBase;
@@ -48,7 +37,6 @@ void initHeap() {
     heap_start->prev = nullptr;
     heap_start->next = nullptr;
     heap_start->size = 2*MiB - sizeof(MemHeader);
-    heap_start->setSan();
 
     first_hole = heap_start;
 }
@@ -71,7 +59,6 @@ void* TryExpandAndReAllocate(uint64_t size, MemHeader* last) {
         newLast->prev = last;
         newLast->next = nullptr;
         newLast->size = blocks*2*MiB - sizeof(MemHeader);
-        newLast->setSan();
         last->next = newLast;
         last = newLast;
     } else {
@@ -86,11 +73,7 @@ void* Allocate(uint64_t size, MemHeader* search_from = first_hole) {
     uint64_t acc_size = size + sizeof(MemHeader);
     MemHeader* curr = (MemHeader*)HEAP_VIRTUAL_BASE;
     MemHeader* last = curr;
-    MemHeader* llast = curr;
-    curr->checkSan();
     while (curr != nullptr && (curr->used || (curr->size < acc_size && curr->size != size))) {
-        curr->checkSan();
-        llast = last;
         last = curr;
         curr = curr->next;
     }
@@ -111,7 +94,6 @@ void* Allocate(uint64_t size, MemHeader* search_from = first_hole) {
         new_hole->prev = curr;
         new_hole->next = curr->next;
         new_hole->size = curr->size - acc_size;
-        new_hole->setSan();
         // update this one
         curr->used = true;
         curr->next = new_hole;
