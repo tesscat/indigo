@@ -16,8 +16,6 @@ TRAMPOLINE_CPP_OBJ := $(shell echo " $(_TRAMPOLINE_CPP_OBJ)" | sed "s| $(SRC_DIR
 
 INC_FLAGS := $(INC_FLAGS) -I$(TRAMPOLINE_ARCH_DIR)/headers -I$(SRC_DIR)/headers/common 
 
-# TRAMPOLINE_DEPS := $(OUT_DIR)/libstd.a $(OUT_DIR)/libmem.a
-
 TRAMPOLINE_OBJS := $(TRAMPOLINE_SILVER_OBJ) $(TRAMPOLINE_AS_OBJ) $(TRAMPOLINE_CPP_OBJ) $(TRAMPOLINE_DEPS)
 
 .PHONY: project run listobjs

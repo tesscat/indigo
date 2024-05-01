@@ -66,11 +66,6 @@ void setFullPermsAndPresent(memory::PageEntryBase* entry) {
     entry->availableBit_orGlobal = false;
 }
 
-// void setRecursiveMapping(memory::PageEntryBase* table) {
-//     setPageMapPerms(&table[511]);
-//     table[511].setAddr((uint64_t) table);
-// }
-
 extern "C" void enablePaging(uint64_t addr);
 
 extern "C" void returnTo() {
@@ -135,7 +130,6 @@ extern "C" void _start(KernelArgs* args, uint64_t kEntryVAddr) {
     // we are hardly using any of this stuff lol
     // just bottom entry
     for(int i = 1; i < 512; i++) {
-        // pageMapTL[i].present = false;
         pageMapTL[i].clear();
     }
 
@@ -232,13 +226,11 @@ extern "C" void _start(KernelArgs* args, uint64_t kEntryVAddr) {
         // there is approximately No Way it's in kernel space
         gopPDPD = (memory::PageDirPointer*) nextFreeMem;
         nextFreeMem += 512*sizeof(memory::PageDirPointer);
-        // setRecursiveMapping(gopPDPD);
 
         setFullPermsAndPresent(&pageMapTL[fb_pml4_idx]);
         pageMapTL[fb_pml4_idx].setAddr((uint64_t) gopPDPD);
 
         for (int i = 0; i < 512; i++) {
-            // gopPDPD[i].present = false;
             gopPDPD[i].clear();
         }
     }
@@ -251,13 +243,11 @@ extern "C" void _start(KernelArgs* args, uint64_t kEntryVAddr) {
     } else {
         gopPDE = (memory::PageDirPointer*) nextFreeMem;
         nextFreeMem += 512*sizeof(memory::PageDirEntry);
-        // setRecursiveMapping(gopPDE);
 
         setFullPermsAndPresent(&gopPDPD[fb_pdp_idx]);
         gopPDPD[fb_pdp_idx].setAddr((uint64_t) gopPDE);
 
         for (int i = 0; i < 512; i++) {
-            // gopPDE[i].present = false;
             gopPDE[i].clear();
         }
     }

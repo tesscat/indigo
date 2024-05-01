@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 
-namespace io {class sstream;}
-
 class String {
     char* base;
 public:

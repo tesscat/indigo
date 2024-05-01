@@ -1,7 +1,6 @@
-#include <stdint.h>
+#include <vec_efi/vec_efi.hpp>
 #define _STDINT_H
 #include <uefi.h>
-#include <vec_efi/vec_efi.hpp>
 #include <ion_efi/parse.hpp>
 #include <ion_efi/ion_efi.hpp>
 

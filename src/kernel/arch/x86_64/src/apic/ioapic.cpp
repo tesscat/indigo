@@ -28,7 +28,6 @@ void initIOApic() {
     memory::markBlockAsUsed((uint64_t)ioapic, sizeof(IOApic));
     memory::kernelIdentityMap4KiBBlock((uint64_t)ioapic);
     // how many interrupts can we handle?
-    // IOAPICVER
     ioapic->ioRegSel = 1;
     irqCount = (ioapic->ioRegValue >> 16) & 0xff;
     // mark all interrupts as disabled

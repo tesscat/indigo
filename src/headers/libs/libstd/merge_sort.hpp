@@ -2,7 +2,10 @@
 #define LIBS_LIBSTD_MERGE_SORT_HPP
 
 // https://stackoverflow.com/questions/2571049/how-to-sort-in-place-using-the-merge-sort-algorithm
-
+// I'd previously implemented a not-in-place merge-sort, and while I could (and might later)
+// TODO: switch to a more efficient sorting algo maybe
+// 
+// this solution off SO works fine
 template<typename T>
 void swap(T* xs, int i, int j) {
     T tmp = xs[i]; xs[i] = xs[j]; xs[j] = tmp;

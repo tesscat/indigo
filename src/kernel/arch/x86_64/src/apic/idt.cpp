@@ -16,8 +16,6 @@ void initIdt() {
 }
 void enableIdt() {
     __asm__ volatile ("lidt %0" : : "m"(desc));
-    // re-enable interrupts
-    // __asm__ volatile ("sti");
 }
 
 void registerExceptionHandler(uint64_t idx, void (*func)(InterruptFrame*, uint64_t), bool isTrap, uint8_t dpl) {

@@ -41,7 +41,7 @@ void initHeap() {
     first_hole = heap_start;
 }
 
-void* Allocate(uint64_t size, MemHeader* search_from);
+void* Allocate(uint64_t size, MemHeader* search_from, bool editFirstHole);
 
 void* TryExpandAndReAllocate(uint64_t size, MemHeader* last) {
     // how many 2MiB blocks to map?
@@ -65,17 +65,21 @@ void* TryExpandAndReAllocate(uint64_t size, MemHeader* last) {
         last->size += blocks*2*MiB;
     }
 
-    return Allocate(size, last);
+    return Allocate(size, last, false);
 }
 
-void* Allocate(uint64_t size, MemHeader* search_from = first_hole) {
+void* Allocate(uint64_t size, MemHeader* search_from, bool editFirstHole) {
     // Find the first one that's enough
     uint64_t acc_size = size + sizeof(MemHeader);
-    MemHeader* curr = (MemHeader*)HEAP_VIRTUAL_BASE;
+    MemHeader* curr = (MemHeader*)search_from;
     MemHeader* last = curr;
     while (curr != nullptr && (curr->used || (curr->size < acc_size && curr->size != size))) {
         last = curr;
         curr = curr->next;
+        if (editFirstHole && !curr->used) {
+            first_hole = curr;
+            editFirstHole = false;
+        }
     }
     if (curr == nullptr) {
         return TryExpandAndReAllocate(size, last);
@@ -128,12 +132,12 @@ void kfree(const void* addr) {
     mh->used = false;
     // try merge forwards
     if (mh->next) {
-        // TryMergeWithSuccessor(mh);
+        TryMergeWithSuccessor(mh);
     }
     // try merge backwards
     if (mh->prev && !mh->prev->used) {
-        // TryMergeWithSuccessor(mh->prev);
-        // mh = mh->prev;
+        TryMergeWithSuccessor(mh->prev);
+        mh = mh->prev;
     }
 
     if ((uint64_t)mh < (uint64_t)first_hole) {
@@ -146,7 +150,7 @@ void kfree(const void* addr) {
 void* kmalloc(const uint64_t size) {
     using namespace memory;
     memory::heapLock.lock();
-    void* a = Allocate(size, first_hole);
+    void* a = Allocate(size, first_hole, true);
     memory::heapLock.release();
     return a;
 }

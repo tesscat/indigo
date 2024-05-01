@@ -1,9 +1,7 @@
 #include "apic/lapic.hpp"
 #include "acpi/acpi.hpp"
 #include "apic/idt.hpp"
-#include "graphics/psf.hpp"
 #include "io/io.hpp"
-#include "logs/logs.hpp"
 #include "memory/page_alloc.hpp"
 #include "memory/phys_alloc.hpp"
 #include "paging.hpp"
@@ -51,8 +49,6 @@ helper_uint32_const(timerCurrentCount, 0x390)
 helper_uint32(timerDivideConfiguration, 0x3E0)
 }
 
-// LapicRegisters lapic(0x0);
-
 __attribute__ ((interrupt)) void spurious(apic::InterruptFrame* frame) {
     loop_forever;
 }
@@ -60,7 +56,6 @@ __attribute__ ((interrupt)) void timer(apic::InterruptFrame* frame) {
     // serve EOI
     *lapic::eoi = 0;
     return;
-    // loop_forever;
 }
 
 uint32_t ticksPerSecond;
@@ -134,13 +129,8 @@ void initLapic() {
     // 0x3F0 from https://wiki.osdev.org/APIC#Local_APIC_registers
     memory::kernelIdentityMap4KiBBlock(LAPIC_BASE, PAGE_PRESENT | PAGE_READ_WRITE | PAGE_WRITE_THROUGH);
     memory::markBlockAsUsed(LAPIC_BASE, 4*KiB);
-    // init the lapic variable
-    // c++ is a bit of a mess, so i need to hackily memcpy it into the right place
-    // LapicRegisters localLapic = LapicRegisters(localApicPhysAddr);
-    // memcpy(&lapic, &localLapic, sizeof(LapicRegisters));
 
     registerInterruptHandler(0xff, spurious, false);
-    // registerInterruptHandler(48, timer, false);
 
     // set the siv
     *lapic::spuriousInterruptVector = 0x1ff;
@@ -157,7 +147,6 @@ void initLapic() {
 
     *lapic::timerDivideConfiguration = 0x3;
     lapic::lvt::timer->clear();
-    // *lapic::timerInitialCount = 0xffffff;
 
     // we need to actually measure the APIC timer freq using the PIT
     // we measure the TSC while we're at it

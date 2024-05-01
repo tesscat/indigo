@@ -47,7 +47,7 @@ struct InterruptFrame {
 void initIdt();
 void enableIdt();
 // the backend is the same, just wanna make sure the user (me) isn't mixing up the function _types_,
-// since clang _will_ complain
+// since clang _will_ complain and/or break IRQs
 
 void registerExceptionHandler(uint64_t idx, void (*func)(InterruptFrame*, uint64_t), bool isTrap, uint8_t dpl = 0);
 inline void registerInterruptHandler(uint64_t idx, void (*func)(InterruptFrame*), bool isTrap, uint8_t dpl = 0) {

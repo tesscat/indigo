@@ -105,15 +105,5 @@ void initAcpiTables() {
 
     xsdt = (XSDT*)acpi_table->XsdtAddress;
     xsdt_entries = (xsdt->header.Length - sizeof(ACPIHeader))/sizeof(uint64_t);
-    // memcpy(buff, xsdt->header.Signature, 4);
-    // printf(buff);
-    // printf("\n%d entries\n", n_entries);
-    // for (int i = 0; i < n_entries; i++) {
-    //     ACPIHeader_t* header = (ACPIHeader_t*)xsdt->entries[i];
-    //     printf("\nAddr: %d", (uint64_t)header);
-    //     memcpy(buff, header->Signature, 4);
-    //     printf("\nFound ");
-    //     printf(buff);
-    // }
 }
 }

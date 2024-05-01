@@ -41,10 +41,6 @@ void initGdt() {
     // set it up
     __asm__ volatile ("cli");
 
-    // uint64_t* gdtU = (uint64_t*)gdt;
-    // gdtU[1] = 0x00af9a000000ffff;
-    // gdtU[2] = 0x00cf92000000ffff;
-
     pointer.size = sizeof(GdtDescriptor) * 5;
     pointer.offset = (uint64_t)&gdt[0];
     loadGdt();

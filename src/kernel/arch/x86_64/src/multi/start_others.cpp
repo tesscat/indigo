@@ -23,7 +23,6 @@ void setupTrampolineCode() {
     memory::kernelIdentityMap4KiBBlock(0x8000);
     memory::markBlockAsUsed(0x8000, 4*KiB);
     // the UEFI loader should have done this already
-    // memcpy((void*)0x8000, (void*)&trampoline_start, 3*KiB);
     *(uint64_t*)(0x8f00) = (uint64_t)memory::kpgtable;
 }
 
@@ -35,13 +34,16 @@ int startOthers() {
     ebx = ebx >> 24;
 
     startupLock.init();
-
+    
     // send an INIT IPI to all APICs apart from my own
-    // *apic::lapic::errorStatus = 0;
-    // *apic::lapic::icr0 = 0b11001100010100000000;
+    *apic::lapic::errorStatus = 0;
+    *apic::lapic::icr0 = 0b11001100010100000000;
+    while (*apic::lapic::icr0 & (1<<12)) {__asm__ volatile ("pause" : : : "memory");}
     // // de-assert it
-    // *apic::lapic::errorStatus = 0;
-    // *apic::lapic::icr0 = 0b11001000010100000000;
+    *apic::lapic::errorStatus = 0;
+    *apic::lapic::icr0 = 0b11001000010100000000;
+    while (*apic::lapic::icr0 & (1<<12)) {__asm__ volatile ("pause" : : : "memory");}
+    apic::apicSleep(10);
 
     for (uint64_t i = 0; i < nCpus; i++) {
         if (cpus[i].apicId == ebx) {
@@ -54,18 +56,7 @@ int startOthers() {
         // lock startup on new thread's behalf
         startupLock.lock();
         other_stack_top = (uint64_t)kmalloc(16*KiB) + (16*KiB);
-        // send a init IPI
-        *apic::lapic::errorStatus = 0;
-        *apic::lapic::icr1 = cpus[i].apicId << 24;
-        *apic::lapic::icr0 = 0b1100010100000000;
-        // wait for delivery
-        while (*apic::lapic::icr0 & (1<<12)) {__asm__ volatile ("pause" : : : "memory");}
-        // // de-assert the init IPI
-        *apic::lapic::errorStatus = 0;
-        *apic::lapic::icr1 = cpus[i].apicId << 24;
-        *apic::lapic::icr0 = 0b1000010100000000;
-        while (*apic::lapic::icr0 & (1<<12)) {__asm__ volatile ("pause" : : : "memory");}
-        apic::apicSleep(10);
+
         // send SIPI twice
         for (int j = 0; j < 2; j++) {
             *apic::lapic::errorStatus = 0;

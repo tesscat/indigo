@@ -1,8 +1,8 @@
 #ifndef LOADER_ACPI_HPP
 #define LOADER_ACPI_HPP
 
-#define _STDINT_H
 #include <stdint.h>
+#define _STDINT_H
 #include <uefi.h>
 #include <loader/acpi_partial.hpp>
 

@@ -1,9 +1,7 @@
 #ifndef LOADER_GRAPHICS_HPP
 #define LOADER_GRAPHICS_HPP
 
-#include <stdint.h>
-
-// the second R stands for Reserved <3
+// the second R stands for Reserved
 enum PixelFormat {
     RGBR,
     BGRR,

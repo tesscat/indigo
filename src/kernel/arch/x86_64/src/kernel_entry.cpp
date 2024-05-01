@@ -8,6 +8,7 @@
 #include "logs/logs.hpp"
 #include "memory/page_alloc.hpp"
 #include "memory/system_map.hpp"
+#include "multi/cpu.hpp"
 #include <graphics/psf.hpp>
 #include <graphics/screen.hpp>
 #include <loader/kernel_args.hpp>
@@ -65,16 +66,6 @@ void call_global_constructors() {
     }
 }
 
-inline void printAsHex(uint64_t n, int l = 16) {
-    char sp[16];
-    int f = itoa(n, sp, 16);
-    sp[f] = '\0';
-    graphics::psf::print("0x");
-    for (int j = 0; j < (l-f); j++) graphics::psf::print("0");
-    graphics::psf::print(sp);
-    graphics::psf::print("\n");
-}
-
 extern "C" void kernel_start(KernelArgs* args) {
     kernel_initialize(args);
 
@@ -83,7 +74,7 @@ extern "C" void kernel_start(KernelArgs* args) {
 
     inator::graph->tryLoadTarget("smp");
     
-    logs::info << "kernel is finished :3\n";
+    logs::info << "kernel (cpu#" << multi::getCpuIdx() << ") is finished\n";
 
     loop_forever;
 

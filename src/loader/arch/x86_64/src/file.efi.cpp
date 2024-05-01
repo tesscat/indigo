@@ -1,5 +1,3 @@
-#include <stdint.h>
-#define _STDINT_H
 #include <uefi.h>
 #include <file.hpp>
 

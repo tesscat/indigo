@@ -1,7 +1,6 @@
 #ifndef KERNEL_UTIL_UTIL_HPP
 #define KERNEL_UTIL_UTIL_HPP
 
-#include "graphics/psf.hpp"
 #include <stdint.h>
 
 #include <libstd/itoa.hpp>

@@ -10,7 +10,7 @@ extern KernelArgs* kargs;
 
 
 namespace memory {
-// little hack to get my hands on pME
+// to get my hands on pME
 extern uint64_t physMapEnd;
 
 // Note for when I get around to writing the slab allocator since we
@@ -93,23 +93,9 @@ PageTableEntry* map4KiB(PageMap map, uint64_t virtAddr, uint64_t physAddr, uint6
     return pte;
 }
 
-// uint64_t used_blocks;
 PageMapL4* kpgtable;
 
 libmem::SlabAllocator<PageTable> slab;
-// // temporary space we can map any page table sized thing
-// // in main memory to, to edit it
-// // an array of pointers to 4KiB blocks that we have the PTEs for
-// PageTable** tempMappings;
-// // and the accompanying PTEs
-// PageTableEntry* tempMappingEntries;
-// // and some scratch space to set it up
-// uint8_t initial_temp_scratch[2*KiB];
-
-// uint64_t slab_allocator() {
-//     used_blocks++;
-//     return (uint64_t)(kpage_map_scratch) + (4*KiB)*(used_blocks-1);
-// }
 
 uint64_t slab_allocator() {
     uint64_t addr = (uint64_t)slab.Alloc();
@@ -144,14 +130,9 @@ void initPageAllocator() {
     // since the backbuffer needs to be mapped we have to cope with that one too
     uint64_t curr_end_addr = util::roundUpToPowerOfTwo(physMapEnd, 4*KiB);
 
-    // set up allocator for the locateOrAllocates
-    // used_blocks = 1;
-
     
     // try and first map 2MiB blocks
-    // TODO: should this be <= or <
-    //
-    while (curr_start_addr + 2*MiB <= curr_end_addr) {
+    while (curr_start_addr + 2*MiB < curr_end_addr) {
         map2MiB<slab_allocator>(kpgtable, curr_start_addr, curr_start_addr - KERNEL_OFFSET);
         curr_start_addr += 2*MiB;
     }
@@ -188,7 +169,7 @@ void initPageAllocator() {
 
 void kernelMap4KiBBlock(uint64_t virtAddr, uint64_t physAddr, uint64_t flags) {
     __asm__ volatile ("invlpg %0" : : "rm"(virtAddr));
-    // just map it girl
+    // just map it
     map4KiB<slab_allocator>(kpgtable, (uint64_t)virtAddr, (uint64_t)physAddr, flags);
     lcr3((uint64_t)kpgtable);
 }
@@ -232,14 +213,14 @@ void kernelUnmap4KiBBlock(uint64_t virtAddr) {
     if(!isTableEmpty(l3_arr)) return;
     slab.Free((PageTable*)l3_arr);
     l4->clear();
-    // l4 shouldn't ever empty so we don't bother checking
+    // l4 shouldn't ever be empty so we don't bother checking
 }
 
 void kernelMap2MiBBlock(uint64_t virtAddr, uint64_t physAddr, uint64_t flags) {
     // TODO: TLB shootdown??
     // flush any previous cache
     __asm__ volatile ("invlpg %0" : : "rm"(virtAddr));
-    // just map it girl
+    // just map it
     map2MiB<slab_allocator>(kpgtable, (uint64_t)virtAddr, (uint64_t)physAddr, flags);
 }
 

@@ -58,7 +58,7 @@ uint64_t mapSizes[N_MAPS];
 extern "C" char _kernel_virt_end;
 extern "C" char _kernel_virt_start;
 
-// little hack to get my hands on bBE
+// weird namespacing to get my hands on bBE
 namespace graphics {
 namespace screen {
 extern uint64_t backBufferEnd;
@@ -76,7 +76,6 @@ inline void or128kAddr(uint64_t addr, uint8_t val) {
     maps[1][idx_128k(addr)] |= (val << offs_128k(addr));
 }
 inline void or2mAddr(uint64_t addr, uint8_t val) {
-    // uint64_t idx =
     auto idx = idx_2m(addr);
     auto offs = offs_2m(addr);
     maps[2][idx] |= (val << offs);

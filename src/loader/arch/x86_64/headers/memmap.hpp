@@ -2,8 +2,6 @@
 #define LOADER_MEMMAP_HPP
 
 #include <stdint.h>
-#define _STDINT_H
-#include "uefi.h"
 
 struct MemMapInfo {
     uint64_t fullSize;

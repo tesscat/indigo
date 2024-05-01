@@ -14,7 +14,7 @@ struct GdtDescriptor {
     // // readable for code segs, writable for data segs
     // uint8_t readOrWrite : 1;
     // // for data segs kinda irrelevant,
-    // // for code segs allows code in this segment to be executed from an equal or lower priveledge level
+    // // for code segs allows code in this segment to be executed from an equal or lower privelege level
     // // or else it'd just be the DPL ring
     // // the priv level does stay the same despite the jump
     // uint8_t directionOrConforming : 1;
