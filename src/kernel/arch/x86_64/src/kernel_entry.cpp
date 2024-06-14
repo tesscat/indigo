@@ -8,6 +8,7 @@
 #include "logs/logs.hpp"
 #include "memory/page_alloc.hpp"
 #include "memory/system_map.hpp"
+#include "modules/module.hpp"
 #include "multi/cpu.hpp"
 #include <graphics/psf.hpp>
 #include <graphics/screen.hpp>
@@ -19,6 +20,7 @@
 #include <memory/heap.hpp>
 #include <multi/start_others.hpp>
 #include <apic/ioapic.hpp>
+#include <modules/spine.hpp>
 
 KernelArgs* kargs;
 
@@ -26,6 +28,12 @@ KernelArgs* kargs;
 using CtorFn = void(*)();
 extern "C" CtorFn _init_array_start[];
 extern "C" CtorFn _init_array_end[];
+
+void call_global_constructors() {
+    for(CtorFn *fn = _init_array_start; fn != _init_array_end; fn++) {
+        (*fn)();
+    }
+}
 
 // Call _early_ setup (page tables, memory handling etc)
 void kernel_initialize(KernelArgs* args) {
@@ -48,6 +56,10 @@ void kernel_initialize(KernelArgs* args) {
     memory::initPhysAllocator();
     // immediately mark block for entry_others
     memory::markBlockAsUsed(0x8000, 4*KiB);
+    // mark block for initial module
+    memory::markBlockAsUsed((uint64_t)kargs->fsDriver, kargs->fsDriverLen);
+    // mark block of kernel elf to read later
+    memory::markBlockAsUsed((uint64_t)kargs->kElf, kargs->kElfLen);
     memory::initPageAllocator();
     apic::pic::disablePic();
     apic::initGdt();
@@ -58,18 +70,24 @@ void kernel_initialize(KernelArgs* args) {
     apic::initLapic();
     apic::initIOApic();
     inator::init();
-}
-
-void call_global_constructors() {
-    for(CtorFn *fn = _init_array_start; fn != _init_array_end; fn++) {
-        (*fn)();
-    }
+    call_global_constructors();
+    modules::initSpine();
 }
 
 extern "C" void kernel_start(KernelArgs* args) {
     kernel_initialize(args);
 
-    call_global_constructors();
+    // Load the first module
+    
+    // The 4KiB-flat address of fsDriver
+    uint8_t* baseAddr = (uint8_t*)((uint64_t)kargs->fsDriver & ~(4*KiB - 1));
+    while (baseAddr < kargs->fsDriver + kargs->fsDriverLen) {
+        memory::kernelIdentityMap4KiBBlock((uint64_t)baseAddr);
+        baseAddr += 4*KiB;
+    }
+    modules::Module fsMod {kargs->fsDriver};
+    fsMod.Load();
+
     inator::graph->finalizeGraph();
 
     inator::graph->tryLoadTarget("smp");

@@ -15,17 +15,37 @@ namespace acpi {
 extern acpi::XSDT *xsdt;
 }
 
-Kernel::Kernel(const char* path, ion::RootNode* root, const char* trampPath) {
+#define loop_forever while(1){__asm__ volatile ("hlt");}
+
+Kernel::Kernel(const char* path, ion::RootNode* root, const char* trampPath, const char* fsDriverPath) {
     // load us up on kernel
     BinaryFile file = readBinaryFile(path);
     if (file.data == nullptr) {
         printf("Kernel not found or unreadable");
+        loop_forever;
         return;
     }
+    kElf = (uint8_t*)file.data;
+    kElfLen = file.len;
+    // get the kernel map
+    // char* mapPath = (char*) malloc(strlen(path) + 5);
+    // strcpy(mapPath, path);
+    // strcat(mapPath, ".map");
+    // BinaryFile kMapFile = readBinaryFile(mapPath);
+    // if (kMapFile.data == nullptr) {
+    //     printf("Kernel map not found/unreadable");
+    //     loop_forever;
+    //     return;
+    // }
+    // kMap = (uint8_t*) malloc(kMapFile.len);
+    // memcpy(kMap, kMapFile.data, kMapFile.len);
+    // kMapLen = kMapFile.len;
+
     // are we ELF?
-    elf::ExeHeader* header = (elf::ExeHeader*) file.data;
+    elf::ElfHeader* header = (elf::ElfHeader*) file.data;
     if (!elf::isUsableElfExeHeader(header)) {
         printf("unusable kernel, invalid ELF header");
+        loop_forever;
         return;
     }
 
@@ -44,7 +64,16 @@ Kernel::Kernel(const char* path, ion::RootNode* root, const char* trampPath) {
             kSegs.Append(KernelSegmentLoc {.physLoc = prog_header->physAddr, .len = prog_header->memSize});
         }
     }
-
+    // load the whole of fsDriver into RAM for the kernel
+    BinaryFile fsDriver = readBinaryFile(fsDriverPath);
+    if (fsDriver.data == nullptr) {
+        printf("FsDriver not found or unreadable");
+        loop_forever;
+        return;
+    }
+    fsD = (uint8_t*)fsDriver.data; // (uint8_t*)malloc(fsDriver.len);
+    // memcpy(fsD, fsDriver.data, fsDriver.len);
+    fsDLen = fsDriver.len;
     // pick the addr for kArgs as above the end of the kernel
     // we really should page-align it so we can mark not-exe in the future but that's future me problem
     // TODO: see above
@@ -59,12 +88,14 @@ Kernel::Kernel(const char* path, ion::RootNode* root, const char* trampPath) {
     BinaryFile tFile = readBinaryFile(trampPath);
     if (tFile.data == nullptr) {
         printf("Trampoline not found or unreadable");
+        loop_forever;
         return;
     }
     // are we ELF?
-    elf::ExeHeader* tHeader = (elf::ExeHeader*) tFile.data;
+    elf::ElfHeader* tHeader = (elf::ElfHeader*) tFile.data;
     if (!elf::isUsableElfExeHeader(tHeader)) {
         printf("unusable trampoline, invalid ELF header");
+        loop_forever;
         return;
     }
 
@@ -83,7 +114,6 @@ Kernel::Kernel(const char* path, ion::RootNode* root, const char* trampPath) {
 
     kEntry = header->entryPointPos;
 
-    delete (uint8_t*)file.data;
     delete (uint8_t*)tFile.data;
 }
 
@@ -133,6 +163,13 @@ void Kernel::Run(size_t argc, char** argv) {
     args->fbHeight = fb.height;
     args->fbPitch = fb.pitch;
     args->fbIsBGR = fb.format == BGRR;
+    
+    // fsDriver
+    args->fsDriver = fsD;
+    args->fsDriverLen = fsDLen;
+    // kElf
+    args->kElf = kElf;
+    args->kElfLen = kElfLen;
 
     // string wrangling, fun times
     char** end = (char**) ((uint8_t*)args + size);

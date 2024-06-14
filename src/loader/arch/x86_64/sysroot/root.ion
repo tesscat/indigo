@@ -4,3 +4,4 @@ kernel = {
   args = ["something", "else"]
 }
 trampoline = "trampoline"
+fsdriver = "fsdriver"

@@ -9,6 +9,13 @@ inline bool strncmp(const char* a, const char* b, const uint64_t n) {
     }
     return true;
 }
+inline bool strcmp(const char* a, const char* b) {
+    while (*a && *b) {
+        if (*a != *b) return false;
+        a++; b++;
+    };
+    return *a == *b;
+}
 inline uint64_t strlen(const char* a) {
     uint64_t n = 0;
     while (a[n]) {n++;};

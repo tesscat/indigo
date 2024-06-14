@@ -8,6 +8,13 @@ struct KernelArgs {
     // size of kernelArgs + all the funky addons
     unsigned int totalSize;
     unsigned int n_cpus;
+    // location of the first module
+    uint8_t* fsDriver;
+    // length of first module
+    uint64_t fsDriverLen;
+    // location of kernel elf
+    uint8_t* kElf;
+    uint64_t kElfLen;
     // PHYSICAL addr of XSDT
     acpi::XSDT* xsdt;
     unsigned int* framebuffer;

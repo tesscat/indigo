@@ -19,7 +19,7 @@ void initAcpi() {
         size = xsdt->header.Length;
         // unmap then re-map so we can get 2MiB action if we need it
         memory::kernelUnmap4KiBBlock((uint64_t)xsdt);
-        memory::kernelMapBlock((uint64_t)xsdt, size);
+        memory::kernelIdentityMapBlock((uint64_t)xsdt, size);
     }
     memory::markBlockAsUsed((uint64_t)xsdt, size);
     xsdt_entries = (xsdt->header.Length - sizeof(ACPIHeader))/sizeof(uint64_t);
@@ -33,7 +33,7 @@ void initAcpi() {
         if (header->Length > 4*KiB) {
             size = header->Length;
             memory::kernelUnmap4KiBBlock((uint64_t)header);
-            memory::kernelMapBlock((uint64_t)header, size);
+            memory::kernelIdentityMapBlock((uint64_t)header, size);
         }
         memory::markBlockAsUsed((uint64_t)header, size);
     }

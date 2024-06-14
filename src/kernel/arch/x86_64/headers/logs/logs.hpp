@@ -3,6 +3,7 @@
 
 #include "io/iostream.hpp"
 #include "libstd/string.hpp"
+#include "modules/export.hpp"
 #include "util/vec.hpp"
 
 namespace logs {
@@ -21,6 +22,7 @@ public:
 };
 void initLogs();
 extern logs::Logger info;
+EXPORT void writeToInfo(const char* text);
 }
 
 #endif // !KERNEL_LOGS_LOG_HPP

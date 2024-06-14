@@ -14,7 +14,7 @@ _KERNEL_CPP_OBJ := $(KERNEL_CPP_SRC_FILES:.cpp=.o)
 KERNEL_CPP_OBJ := $(shell echo " $(_KERNEL_CPP_OBJ)" | sed "s| $(SRC_DIR)| $(BUILD_DIR)|g")
 
 
-INC_FLAGS := $(INC_FLAGS) -I$(KERNEL_ARCH_DIR)/headers -I$(SRC_DIR)/headers/common
+INC_FLAGS := $(INC_FLAGS) -I$(KERNEL_ARCH_DIR)/headers -I$(KERNEL_ARCH_DIR)/indigo/headers -I$(SRC_DIR)/headers/common
 
 KERNEL_DEPS := $(OUT_DIR)/libstd.a $(OUT_DIR)/libmem.a
 
@@ -25,6 +25,13 @@ KERNEL_OBJS := $(KERNEL_SILVER_OBJ) $(KERNEL_AS_OBJ) $(KERNEL_CPP_OBJ) $(BUILD_D
 listobjs:
 	echo $(KERNEL_OBJS)
 
+# special spine generation
+# $(BUILD_DIR)/$(KERNEL_NAME)/gen/initSpine.o: $(SRC_DIR)/$(KERNEL_NAME)/arch/$(ARCH)/src/modules/spinegen.py
+# 	mkdir $(shell dirname $@)
+# 	python $< "$(SRC_DIR)/$(KERNEL_NAME)/arch/$(ARCH)/headers" "$(BUILD_DIR)/$(KERNEL_NAME)/gen/initSpine.cpp"
+# 	$(CPPC) $(BASE_FLAGS) -fno-stack-protector -fno-stack-check -mcmodel=kernel $(INC_FLAGS) -c $(BUILD_DIR)/$(KERNEL_NAME)/gen/initSpine.cpp -o $@
+
+
 # TODO: better mcmodel than large
 $(BUILD_DIR)/$(KERNEL_NAME)/%.o: $(SRC_DIR)/$(KERNEL_NAME)/%.cpp
 	mkdir -p $(shell dirname $@)
@@ -34,7 +41,7 @@ $(BUILD_DIR)/$(KERNEL_NAME)/%.o: $(SRC_DIR)/$(KERNEL_NAME)/%.s
 	mkdir -p $(shell dirname $@)
 	$(NASM) $(NASM_FLAGS) $^ -o $@
 
-$(OUT_DIR)/$(KERNEL_NAME): $(KERNEL_OBJS)
+$(OUT_DIR)/$(KERNEL_NAME): $(KERNEL_OBJS) #$(BUILD_DIR)/$(KERNEL_NAME)/gen/initSpine.o
 	mkdir -p $(shell dirname $@)
 	$(LD) $(LD_FLAGS) -z max-page-size=0x1000 -T $(KERNEL_ARCH_DIR)/kernel.ld $^ -o $@
 

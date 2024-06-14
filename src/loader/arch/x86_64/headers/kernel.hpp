@@ -10,9 +10,13 @@ class Kernel {
     void (* __attribute__((sysv_abi)) entry)(KernelArgs*, uint64_t);
     uint64_t kEntry;
     uint64_t kArgsAddr;
+    uint8_t* fsD;
+    uint64_t fsDLen;
+    uint8_t* kElf;
+    uint64_t kElfLen;
     indigo::Vec<KernelSegmentLoc> kSegs;
 public:
-    Kernel(const char* path, ion::RootNode* root, const char* trampPath);
+    Kernel(const char* path, ion::RootNode* root, const char* trampPath, const char* fsDriverPath);
     void Run(size_t argc, char** argv) __attribute__((noreturn));
 };
 

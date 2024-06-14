@@ -246,13 +246,13 @@ void kernelUnmap2MiBBlock(uint64_t virtAddr) {
     // l4 shouldn't ever empty so we don't bother checking
 }
 
-void kernelMapBlock(uint64_t base, uint64_t size_, uint64_t flags) {
+void kernelIdentityMapBlock(uint64_t base, uint64_t size_, uint64_t flags) {
     // round base down to 4KiB
     uint64_t baseDown = base & ~(4*KiB-1);
     // bump size
-    int64_t size = size_ + base & (4*KiB - 1);
+    int64_t size = size_ + (base & (4*KiB - 1));
     // while baseDown isn't 2MiB aligned, map 4KiB-wise
-    while ((baseDown & (2*MiB-1)) != 0) {
+    while ((baseDown & (2*MiB-1)) != 0 && size > 0) {
         kernelIdentityMap4KiBBlock(baseDown, flags);
         baseDown += 4*KiB;
         size -= 4*KiB;
@@ -270,13 +270,13 @@ void kernelMapBlock(uint64_t base, uint64_t size_, uint64_t flags) {
         size -= 4*KiB;
     }
 }
-void kernelUnmapBlock(uint64_t base, uint64_t size) {
+void kernelIdentityUnmapBlock(uint64_t base, uint64_t size_) {
     // round base down to 4KiB
     uint64_t baseDown = base & ~(4*KiB-1);
     // bump size
-    size += base & (4*KiB - 1);
+    int64_t size = size_ + (base & (4*KiB - 1));
     // while baseDown isn't 2MiB aligned, map 4KiB-wise
-    while ((baseDown & (2*MiB-1)) != 0) {
+    while ((baseDown & (2*MiB-1)) != 0 && size > 0) {
         kernelUnmap4KiBBlock(baseDown);
         baseDown += 4*KiB;
         size -= 4*KiB;

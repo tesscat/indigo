@@ -58,11 +58,26 @@ extern "C" int main(int argc, char** argv) {
         while(1);
     }
 
+    indigo::Vec<const char*> fspath;
+    fspath.Append("fsdriver");
+    ion::Node* fsdriverpath = root->getFrom(&fspath);
+
+    if (!fsdriverpath) {
+        printf("no node at fsdriver");
+        while(1);
+    }
+    if (fsdriverpath->getType() != ion::NodeType::StrNode) {
+        printf("invalid non-string node type at fsdriver");
+        while(1);
+    }
+
     class ion::StrNode* snode = static_cast<class ion::StrNode*>(kpath);
     const char* path = snode->getStr();
     class ion::StrNode* tnode = static_cast<class ion::StrNode*>(tpath);
     const char* tpathn = tnode->getStr();
-    Kernel kernel(path, root, tpathn);
+    class ion::StrNode* fnode = static_cast<class ion::StrNode*>(fsdriverpath);
+    const char* fpathn = fnode->getStr();
+    Kernel kernel(path, root, tpathn, fpathn);
 
     indigo::Vec<const char*> argpath;
     argpath.Append("kernel");

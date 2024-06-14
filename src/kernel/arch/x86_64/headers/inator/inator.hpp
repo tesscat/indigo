@@ -2,6 +2,7 @@
 #define KERNEL_INATOR_INATOR_HPP
 
 #include "libstd/string.hpp"
+#include "modules/export.hpp"
 #include "util/map.hpp"
 #include "util/vec.hpp"
 namespace inator {
@@ -24,8 +25,8 @@ struct Target {
 };
 struct Graph {
     friend void inator::init();
-    util::Map<String, Target> targets;
-    util::Map<String, util::Vec<Target*>> providers;
+    util::ManualMap<String, Target> targets;
+    util::ManualMap<String, util::Vec<Target*>> providers;
     util::ManualVec<Target*> loadedTargets;
     util::ManualVec<String> loadedProviders;
     util::ManualVec<String> rejects;
@@ -38,7 +39,7 @@ public:
     void finalizeGraph();
 };
 
-extern Graph* graph;
+EXPORT Graph* graph;
 }
 
 #endif // !KERNEL_INATOR_INATOR_HPP

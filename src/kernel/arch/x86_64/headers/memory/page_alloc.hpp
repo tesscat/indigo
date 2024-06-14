@@ -20,8 +20,9 @@ inline void kernelIdentityMap2MiBBlock(uint64_t physAddr, uint64_t flags = PAGE_
 // If physAddr is mapped in the kernel space, unmaps it as a 2MiB block
 void kernelUnmap2MiBBlock(uint64_t virtAddr);
 
-void kernelMapBlock(uint64_t base, uint64_t size, uint64_t flags = PAGE_PRESENT | PAGE_READ_WRITE);
-void kernelUnmapBlock(uint64_t base, uint64_t size);
+// identity-maps a block
+void kernelIdentityMapBlock(uint64_t base, uint64_t size, uint64_t flags = PAGE_PRESENT | PAGE_READ_WRITE);
+void kernelIdentityUnmapBlock(uint64_t base, uint64_t size);
 
 extern PageMapL4* kpgtable;
 

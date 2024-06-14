@@ -2,8 +2,7 @@
 #define KERNEL_UTIL_UTIL_HPP
 
 #include <stdint.h>
-
-#include <libstd/itoa.hpp>
+#include <logs/logs.hpp>
 
 namespace util {
 
@@ -14,10 +13,13 @@ namespace util {
 
 #define __COMPTIME_STRINGIFY(X) __COMPTIME_STRINGIFY2(X)
 #define __COMPTIME_STRINGIFY2(X) #X
+// #define panic(msg) {logs::info << "PANIC! at" << __FILE__ << ":" << __COMPTIME_STRINGIFY(__LINE__) << " (`" << __PRETTY_FUNCTION__ << "`): " << msg << "\n"; \
+    // util::_panic(__FILE__, __COMPTIME_STRINGIFY(__LINE__), __PRETTY_FUNCTION__);};
 #define panic(msg) util::_panic(msg, __FILE__, __COMPTIME_STRINGIFY(__LINE__), __PRETTY_FUNCTION__);
 
 #define unimplemented() panic("UNIMPLEMENTED")
 
+[[noreturn]] void _panic(const char* file, const char* line, const char* func) noexcept;
 [[noreturn]] void _panic(const char* msg, const char* file, const char* line, const char* func) noexcept;
 
 // returns ceil(a/b)

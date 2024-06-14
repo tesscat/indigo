@@ -9,6 +9,8 @@ COMPONENTS := loader kernel trampoline
 
 LIBS_DIR := $(SRC_DIR)/libs
 
+MODULES_DIR := $(SRC_DIR)/modules
+
 INC_FLAGS := -I$(SRC_DIR)/headers/libs
 
 PREFIX := $(ARCH)-elf
@@ -38,3 +40,7 @@ include $(COMPONENT_FILES)
 LIB_FILES := $(foreach lib, $(shell find $(LIBS_DIR)/* -maxdepth 0 -type d | sed "s|$(LIBS_DIR)||g"), $(LIBS_DIR)/$(lib)/$(lib).mk)
 
 include $(LIB_FILES)
+
+MODULE_FILES := $(foreach mod, $(shell find $(MODULES_DIR)/* -maxdepth 0 -type d | sed "s|$(MODULES_DIR)||g"), $(MODULES_DIR)/$(mod)/$(mod).mk)
+
+include $(MODULE_FILES)
