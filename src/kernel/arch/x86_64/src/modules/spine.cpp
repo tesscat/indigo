@@ -62,7 +62,7 @@ void initSpine() {
             elf::SymbolTableEntry* ste = (elf::SymbolTableEntry*)(((uint64_t)kHeader) + curr->fileOffset);
             for (; (uint64_t)ste < curr->fileSize + curr->fileOffset + (uint64_t)kHeader; *((uint64_t*)&ste) += curr->entrySize) {
                 // if the value isn't zero, it's visible and globally linked;
-                if (ste->value != 0 && ste->visibility == elf::SymbolVisibility::STV_DEFAULT && ste->binding == elf::SymbolBinding::STB_GLOBAL) {
+                if (ste->value != 0 && ste->visibility == elf::SymbolVisibility::STV_DEFAULT) {
                     // Find the name
                     char* name = strTab + ste->nameOffset;
                     // and add it!
@@ -76,3 +76,7 @@ void initSpine() {
     memory::freeBlock((uint64_t)kargs->kElf, kargs->kElfLen);
 }
 }
+void v(uint64_t i) {
+    logs::info << "hi" << i << "\n";
+}
+

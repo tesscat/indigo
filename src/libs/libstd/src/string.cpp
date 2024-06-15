@@ -24,6 +24,40 @@ String::String(const char* a) {
     }
 }
 
+String::~String() {
+    if (base) kfree(base);
+}
+
+// Copy ctor
+String::String(const String& other) {
+    base = (char*)kmalloc(other.len + 1);
+    memcpy(base, other.base, other.len);
+    base[other.len] = '\0';
+    len = other.len;
+}
+// Move ctor
+String::String(String&& other) {
+    base = other.base;
+    other.base = nullptr;
+    len = other.len;
+    other.len = 0;
+}
+
+// copy
+void String::operator=(const String& other) {
+    base = (char*)kmalloc(other.len + 1);
+    memcpy(base, other.base, other.len);
+    base[other.len] = '\0';
+    len = other.len;
+}
+// move
+void String::operator=(String&& other) {
+    base = other.base;
+    other.base = nullptr;
+    len = other.len;
+    other.len = 0;
+}
+
 String::String() {
     len = 0;
     base = nullptr;

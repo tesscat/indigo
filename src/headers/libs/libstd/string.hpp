@@ -9,8 +9,13 @@ public:
     uint64_t len = 0;
     String();
     String(const char*);
+    String(const String& other);
+    String(String&& other);
+    ~String();
     bool operator==(String& other);
     char operator[](int n);
+    void operator=(const String& other);
+    void operator=(String&& other);
 };
 
 #endif // !LIBS_LIBSTD_STRING_HPP

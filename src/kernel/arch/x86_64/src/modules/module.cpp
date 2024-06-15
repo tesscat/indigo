@@ -87,16 +87,24 @@ Module::Module(uint8_t* loaded_elf) {
                         break;
                     }
                     case elf::RelocType::R_X86_64_64 : {
-                        uint32_t* l = (uint32_t*) loc;
+                        uint64_t* l = (uint64_t*) loc;
                         elf::SymbolTableEntry symTE = symtab[rela->sym];
-                        char* name = (char*)strtab + symTE.nameOffset;
-                        if (!spineContains(name)) {
-                            logs::info << "Spine loading could not find symbol: " << name << '\n';
-                            valid = false;
+                        if (symTE.type == elf::SymbolType::STT_SECTION) {
+                            // has it been loaded?
+                            uint64_t sIdx = symTE.sectionIndex;
+                            if (!sectLocations.hasKey(sIdx)) panic("Did not load sect");
+                            LoadedSectInfo& lsi = sectLocations.get(sIdx);
+                            *l = ((uint64_t)lsi.loc) + rela->addend;
+                        } else {
+                            char* name = (char*)strtab + symTE.nameOffset;
+                            if (!spineContains(name)) {
+                                logs::info << "Spine loading could not find symbol: " << name << '\n';
+                                valid = false;
+                            }
+                            void* sym = spineGet(name);
+                            // TODO: switch t for actual function called
+                            *l = ((uint64_t)sym) + rela->addend;
                         }
-                        void* sym = spineGet(name);
-                        // TODO: switch t for actual function called
-                        *l = ((uint64_t)sym) + rela->addend;
                         break;
 
                     }
