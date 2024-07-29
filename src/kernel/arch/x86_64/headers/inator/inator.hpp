@@ -25,11 +25,11 @@ struct Target {
 };
 struct Graph {
     friend void inator::init();
-    util::ManualMap<String, Target> targets;
-    util::ManualMap<String, util::Vec<Target*>> providers;
-    util::ManualVec<Target*> loadedTargets;
-    util::ManualVec<String> loadedProviders;
-    util::ManualVec<String> rejects;
+    util::Map<String, Target> targets;
+    util::Map<String, util::Vec<Target*>> providers;
+    util::Vec<Target*> loadedTargets;
+    util::Vec<String> loadedProviders;
+    util::Vec<String> rejects;
     void init();
     int tryLoadTarget(String name, util::Vec<String>& depStack);
     int tryLoadProvider(String name, util::Vec<String>& depStack);

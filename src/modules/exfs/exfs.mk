@@ -25,4 +25,5 @@ IFLAGS := -I$(MODULES_DIR)/$(MODULE_NAME)/headers -I$(SRC_DIR)/$(KERNEL_NAME)/ar
 
 $(BUILD_DIR)/$(LOADER_SYSROOT_NAME)/fsdriver: $(C_SRC_FILES) $(CPP_SRC_FILES)
 	mkdir -p $(shell dirname $@)
-	clang++ $(BASE_FLAGS) -fno-PIC -fno-PIE $(IFLAGS) -c $^ -o $@
+	# TODO: figure out what __stack_chk_fail is and how to link it in
+	clang++ $(BASE_FLAGS) -fno-PIC -fno-PIE -fno-stack-check -fno-stack-protector $(IFLAGS) -c $^ -o $@

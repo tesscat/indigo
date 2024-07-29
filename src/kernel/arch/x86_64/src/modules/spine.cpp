@@ -76,7 +76,3 @@ void initSpine() {
     memory::freeBlock((uint64_t)kargs->kElf, kargs->kElfLen);
 }
 }
-void v(uint64_t i) {
-    logs::info << "hi" << i << "\n";
-}
-

@@ -65,17 +65,19 @@ void kernel_initialize(KernelArgs* args) {
     apic::initGdt();
     apic::initIdt();
     memory::initHeap();
-    logs::initLogs();
     acpi::initAcpi();
     apic::initLapic();
     apic::initIOApic();
-    inator::init();
     call_global_constructors();
+    inator::init();
+    logs::initLogs();
     modules::initSpine();
 }
 
 extern "C" void kernel_start(KernelArgs* args) {
     kernel_initialize(args);
+
+    multi::submitSMP();
 
     // Load the first module
     
@@ -92,7 +94,7 @@ extern "C" void kernel_start(KernelArgs* args) {
 
     inator::graph->tryLoadTarget("smp");
     
-    logs::info << "kernel (cpu#" << multi::getCpuIdx() << ") is finished\n";
+    logs::info << "kernel (cpu#" << multi::getCpuIdx() << ") is finished :3\n";
 
     loop_forever;
 

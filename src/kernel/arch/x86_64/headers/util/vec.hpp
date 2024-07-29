@@ -9,6 +9,7 @@
 #endif
 
 #include <stdint.h>
+#include <new>
 
 namespace util {
 // // manual vec {{{
@@ -125,7 +126,7 @@ namespace util {
 template <typename T>
 class Vec {
 private:
-    uint64_t allocated;
+    uint64_t allocated = 0;
 public:
     T* data = nullptr;
     uint64_t len = 0;
@@ -147,6 +148,7 @@ public:
     Vec(const Vec& other);
     Vec(Vec&& other) = delete;
     Vec<T>& operator=(Vec<T>& other) = default;
+    void init() {}
 };
 }
 
@@ -178,18 +180,23 @@ Vec<T>::Vec() {
 }
 template <typename T>
 Vec<T>::Vec(uint64_t len_) : len{len_} {
-    allocated = (len - (len % VEC_ALLOC_BLOCK_SIZE)) + VEC_ALLOC_BLOCK_SIZE;
-    data = (T*) kmalloc(allocated * sizeof(T));
+    if (len != 0) {
+        allocated = (len - (len % VEC_ALLOC_BLOCK_SIZE)) + VEC_ALLOC_BLOCK_SIZE;
+        data = (T*) kmalloc(allocated * sizeof(T));
+    } else {
+        allocated = 0;
+        data = nullptr;
+    }
 }
 
 template <typename T>
 void Vec<T>::Trim() {
     allocated = len;
     if (allocated == 0) {
-        if (data) kfree(data);
+        if (data) {kfree(data);}
         data = nullptr;
     }
-    else data = (T*) krealloc(data, allocated * sizeof(T));
+    else {data = (T*) krealloc(data, allocated * sizeof(T));}
 }
 template <typename T>
 void Vec<T>::ApproxTrim() {
@@ -201,8 +208,10 @@ template <typename T>
 Vec<T>::~Vec() {
     // TODO: if data has destructor call it
     for (int i = 0; i < len; i++) (&data[i])->~T();
-    if (!takeMyData)
+    if (!takeMyData && data)
         kfree(data);
+    data == nullptr;
+    len = 0;
 }
 template <typename T>
 T& Vec<T>::operator[] (uint64_t index) {
@@ -212,8 +221,11 @@ template <typename T>
 void Vec<T>::Append(T value) {
     if (len >= allocated) {
         allocated += VEC_ALLOC_BLOCK_SIZE;
-        if (data) data = (T*) krealloc(data, allocated * sizeof(T));
-        else data = (T*)kmalloc(allocated * sizeof(T));
+        if (data) {
+            data = (T*) krealloc(data, allocated * sizeof(T));
+        } else {
+            data = (T*)kmalloc(allocated * sizeof(T));
+        }
     }
     data[len] = value;
     len++;

@@ -15,7 +15,7 @@ void initLogs() {
     info.init();
 }
 
-util::ManualVec<char>* Logger::currBuff() {
+util::Vec<char>* Logger::currBuff() {
     uint64_t idx = multi::getCpuIdx();
     return buff[idx];
 }
@@ -50,7 +50,7 @@ void Logger::init() {
     hasInit = true;
     buff.init();
     for (unsigned int i = 0; i < kargs->n_cpus; i++) {
-        util::ManualVec<char>* p = (util::ManualVec<char>*)kmalloc(sizeof(util::ManualVec<char>));
+        util::Vec<char>* p = (util::Vec<char>*)kmalloc(sizeof(util::Vec<char>));
         p->init();
         buff.Append(p);
     }

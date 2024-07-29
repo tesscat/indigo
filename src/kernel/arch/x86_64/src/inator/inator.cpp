@@ -90,34 +90,34 @@ int Graph::tryLoadTarget(String name) {
     return tryLoadTarget(name, depStack);
 }
 
-// some example targets to test
-int l0() {
-    logs::info << "l0() called\n";
-    return 0;
-}
-__attribute__ ((constructor)) void t0() {
-    Target t0;
-    t0.name = String("t0");
-    t0.provides.Append(String("p2"));
-    t0.preference = 10;
-    t0.load = l0;
+// // some example targets to test
+// int l0() {
+//     logs::info << "l0() called\n";
+//     return 0;
+// }
+// __attribute__ ((constructor)) void t0() {
+//     Target t0;
+//     t0.name = String("t0");
+//     t0.provides.Append(String("p2"));
+//     t0.preference = 10;
+//     t0.load = l0;
 
-    graph->addTarget(t0);
-}
-int l1() {
-    logs::info << "l1() called\n";
-    return 0;
-}
-__attribute__ ((constructor)) void t1() {
-    Target t1;
-    t1.name = String("t1");
-    t1.provides.Append(String("p1"));
-    t1.dependencies.Append(String("p2"));
-    t1.preference = 10;
-    t1.load = l1;
+//     graph->addTarget(t0);
+// }
+// int l1() {
+//     logs::info << "l1() called\n";
+//     return 0;
+// }
+// __attribute__ ((constructor)) void t1() {
+//     Target t1;
+//     t1.name = String("t1");
+//     t1.provides.Append(String("p1"));
+//     t1.dependencies.Append(String("p2"));
+//     t1.preference = 10;
+//     t1.load = l1;
 
-    graph->addTarget(t1);
-}
+//     graph->addTarget(t1);
+// }
 
 
 

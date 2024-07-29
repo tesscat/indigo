@@ -47,6 +47,7 @@ class Map {
     util::Vec<V> values_ {};
 public:
     Map() : keys_{}, values_{} {}
+    void init() {}
     V& get(K& key) {
         for (uint64_t i = 0; i < keys_.len; i++) {
             if (keys_[i] == key) return values_[i];

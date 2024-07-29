@@ -9,8 +9,8 @@
 namespace logs {
 class Logger : public io::sstream {
     friend void initLogs();
-    util::ManualVec<util::ManualVec<char>*> buff;
-    util::ManualVec<char>* currBuff();
+    util::Vec<util::Vec<char>*> buff;
+    util::Vec<char>* currBuff();
     bool hasInit;
     void init();
 public:
