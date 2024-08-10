@@ -13,6 +13,7 @@ public:
     String(String&& other);
     ~String();
     bool operator==(String& other);
+    bool operator==(const char* other);
     char operator[](int n);
     void operator=(const String& other);
     void operator=(String&& other);

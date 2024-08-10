@@ -1,11 +1,10 @@
 #ifndef KERNEL_ACPI_ACPI_HPP
 #define KERNEL_ACPI_ACPI_HPP
 
-#include "modules/export.hpp"
 #include <loader/acpi_partial.hpp>
 
 namespace acpi {
-EXPORT ACPIHeader* findTable(const char sig[4]);
+ACPIHeader* findTable(const char sig[4]);
 void initAcpi();
 
 // some table defs

@@ -4,4 +4,5 @@ kernel = {
   args = ["something", "else"]
 }
 trampoline = "trampoline"
-fsdriver = "fsdriver"
+fsdriver = "squashfs.iko"
+initrd = "initrd"

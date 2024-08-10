@@ -12,6 +12,10 @@ struct KernelArgs {
     uint8_t* fsDriver;
     // length of first module
     uint64_t fsDriverLen;
+    // location of initrd
+    uint8_t* initrd;
+    // length of initrd
+    uint64_t initrdLen;
     // location of kernel elf
     uint8_t* kElf;
     uint64_t kElfLen;

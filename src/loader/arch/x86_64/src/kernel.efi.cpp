@@ -17,7 +17,7 @@ extern acpi::XSDT *xsdt;
 
 #define loop_forever while(1){__asm__ volatile ("hlt");}
 
-Kernel::Kernel(const char* path, ion::RootNode* root, const char* trampPath, const char* fsDriverPath) {
+Kernel::Kernel(const char* path, ion::RootNode* root, const char* trampPath, const char* fsDriverPath, const char* initrdPath) {
     // load us up on kernel
     BinaryFile file = readBinaryFile(path);
     if (file.data == nullptr) {
@@ -25,21 +25,11 @@ Kernel::Kernel(const char* path, ion::RootNode* root, const char* trampPath, con
         loop_forever;
         return;
     }
+
+
     kElf = (uint8_t*)file.data;
     kElfLen = file.len;
-    // get the kernel map
-    // char* mapPath = (char*) malloc(strlen(path) + 5);
-    // strcpy(mapPath, path);
-    // strcat(mapPath, ".map");
-    // BinaryFile kMapFile = readBinaryFile(mapPath);
-    // if (kMapFile.data == nullptr) {
-    //     printf("Kernel map not found/unreadable");
-    //     loop_forever;
-    //     return;
-    // }
-    // kMap = (uint8_t*) malloc(kMapFile.len);
-    // memcpy(kMap, kMapFile.data, kMapFile.len);
-    // kMapLen = kMapFile.len;
+
 
     // are we ELF?
     elf::ElfHeader* header = (elf::ElfHeader*) file.data;
@@ -48,6 +38,7 @@ Kernel::Kernel(const char* path, ion::RootNode* root, const char* trampPath, con
         loop_forever;
         return;
     }
+
 
     uint64_t maxKAddr = 0;
 
@@ -71,9 +62,21 @@ Kernel::Kernel(const char* path, ion::RootNode* root, const char* trampPath, con
         loop_forever;
         return;
     }
-    fsD = (uint8_t*)fsDriver.data; // (uint8_t*)malloc(fsDriver.len);
-    // memcpy(fsD, fsDriver.data, fsDriver.len);
+    fsD = (uint8_t*)fsDriver.data;
     fsDLen = fsDriver.len;
+
+
+    // load the whole initrd into RAM for the kernel
+    BinaryFile initrd = readBinaryFile(initrdPath);
+    if (initrd.data == nullptr) {
+        printf("initrd not found or unreadable");
+        loop_forever;
+        return;
+    }
+    initrdData = (uint8_t*)initrd.data;
+    initrdLen = initrd.len;
+
+
     // pick the addr for kArgs as above the end of the kernel
     // we really should page-align it so we can mark not-exe in the future but that's future me problem
     // TODO: see above
@@ -167,6 +170,9 @@ void Kernel::Run(size_t argc, char** argv) {
     // fsDriver
     args->fsDriver = fsD;
     args->fsDriverLen = fsDLen;
+    // initrd
+    args->initrd = initrdData;
+    args->initrdLen = initrdLen;
     // kElf
     args->kElf = kElf;
     args->kElfLen = kElfLen;

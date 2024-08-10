@@ -11,6 +11,13 @@ bool String::operator==(String& other) {
     return true;
 }
 
+bool String::operator==(const char* other) {
+    for (uint64_t i = 0; i < len && other[i]; i++) {
+        if (other[i] != base[i]) return false;
+    }
+    return true;
+}
+
 char String::operator[](int n) {
     return base[n];
 }

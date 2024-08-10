@@ -71,7 +71,7 @@ int startOthers() {
 }
 
 // submit this to the graph
-/* __attribute__ ((constructor)) */ void submitSMP() {
+void submitSMP() {
     inator::Target t;
     t.name = String("smp");
     t.provides.Append(String("smp"));

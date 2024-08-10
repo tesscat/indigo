@@ -14,6 +14,7 @@ struct Target {
     util::Vec<String> dependencies;
     util::Vec<String> provides;
     uint64_t preference;
+    // TODO: once errors impl'd, make this void not int
     int (*load)();
     bool operator<(Target& other) {
         // reversed since imsort sorts ascending
@@ -39,7 +40,7 @@ public:
     void finalizeGraph();
 };
 
-EXPORT Graph* graph;
+extern Graph* graph;
 }
 
 #endif // !KERNEL_INATOR_INATOR_HPP

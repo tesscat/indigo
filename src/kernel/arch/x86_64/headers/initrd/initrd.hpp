@@ -1,0 +1,3 @@
+namespace initrd {
+void submitInitrd();
+}

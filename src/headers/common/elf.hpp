@@ -123,6 +123,14 @@ enum SectHeaderType {
     SHT_NUM = 0x13,
 };
 }
+namespace SectionGroupFlags {
+enum SectionGroupFlags {
+    GRP_COMDAT = 0x1,
+    GRP_MASKOS = 0x0ff00000,
+    GRP_MASKPROC = 0xf0000000,
+};
+}
+
 namespace SectFlags {
 enum SectFlags : uint64_t {
     // Writable

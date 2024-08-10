@@ -58,6 +58,8 @@ void kernel_initialize(KernelArgs* args) {
     memory::markBlockAsUsed(0x8000, 4*KiB);
     // mark block for initial module
     memory::markBlockAsUsed((uint64_t)kargs->fsDriver, kargs->fsDriverLen);
+    // and for initrd
+    memory::markBlockAsUsed((uint64_t)kargs->initrd, kargs->initrdLen);
     // mark block of kernel elf to read later
     memory::markBlockAsUsed((uint64_t)kargs->kElf, kargs->kElfLen);
     memory::initPageAllocator();
@@ -93,6 +95,8 @@ extern "C" void kernel_start(KernelArgs* args) {
     inator::graph->finalizeGraph();
 
     inator::graph->tryLoadTarget("smp");
+
+    inator::graph->tryLoadTarget("initrd");
     
     logs::info << "kernel (cpu#" << multi::getCpuIdx() << ") is finished :3\n";
 

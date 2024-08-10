@@ -19,7 +19,7 @@ namespace util {
 
 #define unimplemented() panic("UNIMPLEMENTED")
 
-[[noreturn]] void _panic(const char* file, const char* line, const char* func) noexcept;
+// [[noreturn]] void _panic(const char* file, const char* line, const char* func) noexcept;
 [[noreturn]] void _panic(const char* msg, const char* file, const char* line, const char* func) noexcept;
 
 // returns ceil(a/b)

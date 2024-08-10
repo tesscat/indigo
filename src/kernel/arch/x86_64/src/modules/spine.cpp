@@ -1,5 +1,6 @@
 // #include "acpi/acpi.hpp"
 // #include "inator/inator.hpp"
+#include "modules/spine.hpp"
 #include "elf.hpp"
 #include "graphics/screen.hpp"
 #include "libmem/string.hpp"
@@ -12,20 +13,20 @@ namespace modules {
 
 util::Map<String, void*> spine;
 
-bool spineContains(const char* name) {
-    String s (name);
-    return spine.hasKey(s);
-}
+// bool spineContains(const char* name) {
+//     String s (name);
+//     return spine.hasKey(s);
+// }
 
-void* spineGet(const char* name) {
-    String s (name);
-    return spine.get(s);
-}
+// void* spineGet(const char* name) {
+//     String s (name);
+//     return spine.get(s);
+// }
 
-void spineSet(const char* name, void* fn) {
-    String s (name);
-    spine.set(s, fn);
-}
+// void spineSet(const char* name, void* fn) {
+//     String s (name);
+//     spine.set(s, fn);
+// }
 
 void initSpine() {
     // Map the kernel elf thingy
@@ -66,7 +67,9 @@ void initSpine() {
                     // Find the name
                     char* name = strTab + ste->nameOffset;
                     // and add it!
-                    spineSet(name, (void*)ste->value);
+                    String s(name);
+                    spine.set(s, (void*)ste->value);
+                    // spineSet(name, (void*)ste->value);
                 }
             }
         }

@@ -2,7 +2,9 @@
 #include "libmem/string.hpp"
 #include "logs/logs.hpp"
 #include "memory/heap.hpp"
+#include "sync/spinlock.hpp"
 #include "util/map.hpp"
+#include "util/vec.hpp"
 #include <cstdint>
 #include <modules/module.hpp>
 #include <util/util.hpp>
@@ -15,15 +17,67 @@ struct LoadedSectInfo {
 };
 
 namespace modules {
+
+sync::Spinlock moduleLock;
+// TODO: switch to a hashset once we have those
+util::Vec<String> loadedComdats;
+
 Module::Module(uint8_t* loaded_elf) {
+    moduleLock.lock();
     // TODO: do checks
     const elf::ElfHeader* hdr = (elf::ElfHeader*) loaded_elf;
-    // First, load sections
-    util::Map<uint64_t, LoadedSectInfo> sectLocations;
+
     elf::SymbolTableEntry* symtab;
     uint64_t symtab_length;
     uint8_t* strtab;
+    // Find the symbol table and strtab {{{
     for (uint64_t i = 0; i < hdr->sectHeaderTableLength; i++) {
+        elf::SectHeader* shdr = (elf::SectHeader*)(loaded_elf + hdr->sectHeaderPos + hdr->sectEntrySize * i);
+        if (shdr->type == elf::SectHeaderType::SHT_SYMTAB) {
+            symtab = (elf::SymbolTableEntry*)(loaded_elf + shdr->fileOffset);
+            symtab_length = shdr->fileSize / shdr->entrySize;
+        }
+        if (shdr->type == elf::SectHeaderType::SHT_STRTAB) {
+            strtab = loaded_elf + shdr->fileOffset;
+        }
+    }
+    // }}}
+
+    // we need to keep track of which ones we skip
+    // TODO: this should be a set not a vect
+    util::Vec<uint64_t> skippedSectIdxs;
+    // First we should inspect COMDAT sections for deduplication
+    for (uint64_t i = 0; i < hdr->sectHeaderTableLength; i++) {
+        elf::SectHeader* shdr = (elf::SectHeader*)(loaded_elf + hdr->sectHeaderPos + hdr->sectEntrySize * i);
+        if (shdr->type == elf::SectHeaderType::SHT_GROUP) {
+            uint32_t* group = (uint32_t*)(loaded_elf + shdr->fileOffset);
+            // is this a COMDAT group?
+            if (group[0] & elf::SectionGroupFlags::GRP_COMDAT) {
+                elf::SectHeader* symtab_hdr = (elf::SectHeader*)(loaded_elf + hdr->sectHeaderPos + hdr->sectEntrySize * shdr->link);
+                elf::SymbolTableEntry* symtab_local = (elf::SymbolTableEntry*)(loaded_elf + symtab_hdr->fileOffset);
+                elf::SymbolTableEntry* signature = &symtab_local[shdr->info];
+                char* sig_name = (char*)(strtab + signature->nameOffset);
+                String sig (sig_name);
+                // it's also possible that the kernel itself has defs for these
+                if (loadedComdats.Contains(sig) || spine.hasKey(sig)) {
+                    // skip it
+                    for (uint8_t* curr = shdr->entrySize + (uint8_t*)group; curr < loaded_elf + shdr->fileOffset + shdr->fileSize; curr += shdr->entrySize) {
+                        uint32_t* currEnt = (uint32_t*)curr;
+                        skippedSectIdxs.Append(*currEnt);
+                        logs::info << "skipped section " << (uint64_t)*currEnt << "\n";
+                    }
+                } else {
+                    // register it
+                    loadedComdats.Append(sig);
+                }
+            }
+        }
+    }
+
+    // load sections
+    util::Map<uint64_t, LoadedSectInfo> sectLocations;
+    for (uint64_t i = 0; i < hdr->sectHeaderTableLength; i++) {
+        if (skippedSectIdxs.Contains(i)) continue;
         elf::SectHeader* shdr = (elf::SectHeader*)(loaded_elf + hdr->sectHeaderPos + hdr->sectEntrySize * i);
         if (shdr->flags & elf::SectFlags::SHF_ALLOC) {
             // Make sure we follow alignment
@@ -36,16 +90,49 @@ Module::Module(uint8_t* loaded_elf) {
             // add it to the map
             sectLocations.set(i, (LoadedSectInfo){.size = shdr->fileSize, .loc = sect});
         }
+    }
+    
+    void* load_addr = nullptr;
+    void* unload_addr = nullptr;
+    // register things in symtab
+    for (uint64_t i = 0; i < hdr->sectHeaderTableLength; i++) {
+        if (skippedSectIdxs.Contains(i)) continue;
+        elf::SectHeader* shdr = (elf::SectHeader*)(loaded_elf + hdr->sectHeaderPos + hdr->sectEntrySize * i);
         if (shdr->type == elf::SectHeaderType::SHT_SYMTAB) {
-            symtab = (elf::SymbolTableEntry*)(loaded_elf + shdr->fileOffset);
-            symtab_length = shdr->fileSize / shdr->entrySize;
-        }
-        if (shdr->type == elf::SectHeaderType::SHT_STRTAB) {
-            strtab = loaded_elf + shdr->fileOffset;
+            elf::SymbolTableEntry* ste = (elf::SymbolTableEntry*)(((uint64_t)loaded_elf) + shdr->fileOffset);
+            for (; (uint64_t)ste < shdr->fileSize + shdr->fileOffset + (uint64_t)loaded_elf ; *((uint64_t*)&ste) += shdr->entrySize) {
+                // if the value isn't zero, it's visible and globally/weakly linked, and the section isn't 0 (null sect)
+                if (ste->visibility == elf::SymbolVisibility::STV_DEFAULT 
+                    && (ste->binding == elf::SymbolBinding::STB_WEAK || ste->binding == elf::SymbolBinding::STB_GLOBAL)
+                    && (ste->sectionIndex != 0)) {
+                    // if we haven't skipped the section
+                    uint64_t sIdx = ste->sectionIndex;
+                    if (!skippedSectIdxs.Contains(sIdx)) {
+                        // Find the name
+                        char* name = (char*)(strtab + ste->nameOffset);
+                        // and add it! if not already
+                        String s(name);
+                        uint8_t* loc = sectLocations.get(sIdx).loc;
+                        // unless it's module_load or _unload
+                        if (s == "module_load") {
+                            load_addr = ste->value + loc;
+                        } else if (s == "module_unload") {
+                            unload_addr = ste->value + loc;
+                        } else { // if (!spine.hasKey(s)) {
+                            spine.set(s, (void*)(ste->value + loc));
+                            logs::info << "added " << s << "\n";
+                        } // else {
+                            // logs::info << "duplicate symbol `" << s << "`, ignoring newer def\n";
+                        // }
+                    }
+                }
+            }
         }
     }
+
     // After everything is loaded, handle relocations
     for (uint64_t i = 0; i < hdr->sectHeaderTableLength; i++) {
+        if (skippedSectIdxs.Contains(i)) continue;
         elf::SectHeader* shdr = (elf::SectHeader*)(loaded_elf + hdr->sectHeaderPos + hdr->sectEntrySize * i);
         if (shdr->type == elf::SectHeaderType::SHT_RELA) {
             elf::Rela* rela = (elf::Rela*)(loaded_elf + shdr->fileOffset);
@@ -73,12 +160,13 @@ Module::Module(uint8_t* loaded_elf) {
                         uint32_t* l = (uint32_t*) loc;
                         elf::SymbolTableEntry symTE = symtab[rela->sym];
                         char* name = (char*)strtab + symTE.nameOffset;
-                        if (!spineContains(name)) {
+                        String s(name);
+                        if (!spine.hasKey(s)) {
                             logs::info << "Spine loading could not find symbol: " << name << '\n';
                             valid = false;
                         }
-                        void* sym = spineGet(name);
-                        // TODO: switch t for actual function called
+                        void* sym = spine.get(s);
+                        // actually write it
                         *l = ((uint64_t)sym) - (uint64_t)loc + rela->addend;
                         break;
                     }
@@ -97,11 +185,12 @@ Module::Module(uint8_t* loaded_elf) {
                             *l = ((uint64_t)lsi.loc) + rela->addend;
                         } else {
                             char* name = (char*)strtab + symTE.nameOffset;
-                            if (!spineContains(name)) {
+                            String s(name);
+                            if (!spine.hasKey(s)) {
                                 logs::info << "Spine loading could not find symbol: " << name << '\n';
                                 valid = false;
                             }
-                            void* sym = spineGet(name);
+                            void* sym = spine.get(s);
                             // TODO: switch t for actual function called
                             *l = ((uint64_t)sym) + rela->addend;
                         }
@@ -118,30 +207,30 @@ Module::Module(uint8_t* loaded_elf) {
             if (!valid) panic("Unknown sym");
         }
     }
-    void* load_addr = nullptr;
-    void* unload_addr = nullptr;
     // Find the load + unload function addrs
-    for (uint64_t i = 0; i < symtab_length; i++) {
-        elf::SymbolTableEntry sym = symtab[i];
-        uint8_t* name = strtab + sym.nameOffset;
-        if (libmem::strcmp("module_load", (char*)name)) {
-            uint64_t idx = sym.sectionIndex;
-            if (!sectLocations.hasKey(idx)) continue; 
-            LoadedSectInfo lsi = sectLocations.get(idx);
-            uint8_t* sect = lsi.loc;
-            load_addr = sect + sym.value;
-        } else if (libmem::strcmp("module_unload", (char*)name)) {
-            uint64_t idx = sym.sectionIndex;
-            if (!sectLocations.hasKey(idx)) continue; 
-            LoadedSectInfo lsi = sectLocations.get(idx);
-            uint8_t* sect = lsi.loc;
-            unload_addr = sect + sym.value;
-        }
-    }
+    // for (uint64_t i = 0; i < symtab_length; i++) {
+    //     elf::SymbolTableEntry sym = symtab[i];
+    //     uint8_t* name = strtab + sym.nameOffset;
+    //     if (libmem::strcmp("module_load", (char*)name)) {
+    //         uint64_t idx = sym.sectionIndex;
+    //         if (!sectLocations.hasKey(idx)) continue; 
+    //         LoadedSectInfo lsi = sectLocations.get(idx);
+    //         uint8_t* sect = lsi.loc;
+    //         load_addr = sect + sym.value;
+    //     } else if (libmem::strcmp("module_unload", (char*)name)) {
+    //         uint64_t idx = sym.sectionIndex;
+    //         if (!sectLocations.hasKey(idx)) continue; 
+    //         LoadedSectInfo lsi = sectLocations.get(idx);
+    //         uint8_t* sect = lsi.loc;
+    //         unload_addr = sect + sym.value;
+    //     }
+    // }
     load = (void(*)())load_addr;
     unload = (void(*)())unload_addr;
     inmemory = true;
     loaded = false;
+
+    moduleLock.release();
 }
 
 void Module::Load() {

@@ -22,7 +22,7 @@ public:
 };
 void initLogs();
 extern logs::Logger info;
-EXPORT void writeToInfo(const char* text);
+void writeToInfo(const char* text);
 }
 
 #endif // !KERNEL_LOGS_LOG_HPP

@@ -55,7 +55,7 @@ void Logger::init() {
         buff.Append(p);
     }
 }
-EXPORT void writeToInfo(const char* c) {
+void writeToInfo(const char* c) {
     info << c;
 }
 }
