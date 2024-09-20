@@ -2,7 +2,6 @@
 #define KERNEL_INATOR_INATOR_HPP
 
 #include "libstd/string.hpp"
-#include "modules/export.hpp"
 #include "util/map.hpp"
 #include "util/vec.hpp"
 namespace inator {
@@ -21,9 +20,10 @@ struct Target {
         return preference > other.preference;
     }
     Target() = default;
-    Target(Target& other) = default;
+    Target(const Target& other) = default;
     Target& operator=(Target& other) = default;
 };
+
 struct Graph {
     friend void inator::init();
     util::Map<String, Target> targets;
@@ -42,5 +42,13 @@ public:
 
 extern Graph* graph;
 }
+
+// TODO: standardise these RELEASE thingies
+#ifndef RELEASE
+namespace util {
+template class util::Map<String, inator::Target>;
+template class util::Map<String, util::Vec<inator::Target*>>;
+}
+#endif
 
 #endif // !KERNEL_INATOR_INATOR_HPP

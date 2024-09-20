@@ -26,7 +26,8 @@ void Graph::finalizeGraph() {
         for (uint64_t j = 0; j < targ.provides.len; j++) {
             String& prov = targ.provides[j];
             if (!providers.hasKey(prov)) {
-                providers.set(prov, util::Vec<Target*>());
+                util::Vec<Target*> newTargets {};
+                providers.set(prov, newTargets);
             }
             providers.get(prov).Append(&targ);
         }

@@ -88,12 +88,16 @@ Module::Module(uint8_t* loaded_elf) {
                 memcpy(sect, loaded_elf + shdr->fileOffset, shdr->fileSize);
             }
             // add it to the map
-            sectLocations.set(i, (LoadedSectInfo){.size = shdr->fileSize, .loc = sect});
+            LoadedSectInfo loadedSect {.size = shdr->fileSize, .loc = sect};
+            sectLocations.set(i, loadedSect);
         }
     }
-    
+
     void* load_addr = nullptr;
     void* unload_addr = nullptr;
+
+    // util::Map<String, void*> local_bindings;
+
     // register things in symtab
     for (uint64_t i = 0; i < hdr->sectHeaderTableLength; i++) {
         if (skippedSectIdxs.Contains(i)) continue;
@@ -112,23 +116,43 @@ Module::Module(uint8_t* loaded_elf) {
                         char* name = (char*)(strtab + ste->nameOffset);
                         // and add it! if not already
                         String s(name);
-                        uint8_t* loc = sectLocations.get(sIdx).loc;
+                        uint8_t* sectLoc = sectLocations.get(sIdx).loc;
                         // unless it's module_load or _unload
                         if (s == "module_load") {
-                            load_addr = ste->value + loc;
+                            load_addr = ste->value + sectLoc;
                         } else if (s == "module_unload") {
-                            unload_addr = ste->value + loc;
+                            unload_addr = ste->value + sectLoc;
                         } else { // if (!spine.hasKey(s)) {
-                            spine.set(s, (void*)(ste->value + loc));
+                            void* symbolVal = (ste->value + sectLoc);
+                            spine.set(s, symbolVal);
                             logs::info << "added " << s << "\n";
                         } // else {
-                            // logs::info << "duplicate symbol `" << s << "`, ignoring newer def\n";
+                        // logs::info << "duplicate symbol `" << s << "`, ignoring newer def\n";
                         // }
                     }
                 }
+                // } else if (ste->binding == elf::SymbolBinding::STB_LOCAL && ste->type != elf::SymbolType::STT_FILE && ste->sectionIndex != 0) {
+                //     // if we haven't skipped the section
+                //     uint64_t sIdx = ste->sectionIndex;
+                //     if (!skippedSectIdxs.Contains(sIdx)) {
+                //         // Find the name
+                //         char* name = (char*)(strtab + ste->nameOffset);
+                //         // and add it!
+                //         String s(name);
+                //         uint8_t* sectLoc = sectLocations.get(sIdx).loc;
+                //         local_bindings.set(s, (void*)(ste->value + sectLoc));
+                //         logs::info << "local added " << s << "\n";
+                //     }
+                // }
             }
         }
     }
+
+    auto resolve_sym = [&](String s) {
+        // if (local_bindings.hasKey(s)) return local_bindings.get(s);
+        if (spine.hasKey(s)) return spine.get(s);
+        return (void*)nullptr;
+    };
 
     // After everything is loaded, handle relocations
     for (uint64_t i = 0; i < hdr->sectHeaderTableLength; i++) {
@@ -161,11 +185,12 @@ Module::Module(uint8_t* loaded_elf) {
                         elf::SymbolTableEntry symTE = symtab[rela->sym];
                         char* name = (char*)strtab + symTE.nameOffset;
                         String s(name);
-                        if (!spine.hasKey(s)) {
+
+                        void* sym = resolve_sym(s);
+                        if (!sym) {
                             logs::info << "Spine loading could not find symbol: " << name << '\n';
                             valid = false;
                         }
-                        void* sym = spine.get(s);
                         // actually write it
                         *l = ((uint64_t)sym) - (uint64_t)loc + rela->addend;
                         break;
@@ -186,20 +211,43 @@ Module::Module(uint8_t* loaded_elf) {
                         } else {
                             char* name = (char*)strtab + symTE.nameOffset;
                             String s(name);
-                            if (!spine.hasKey(s)) {
+
+                            void* sym = resolve_sym(s);
+                            if (!sym) {
                                 logs::info << "Spine loading could not find symbol: " << name << '\n';
                                 valid = false;
                             }
-                            void* sym = spine.get(s);
                             // TODO: switch t for actual function called
                             *l = ((uint64_t)sym) + rela->addend;
                         }
                         break;
+                    }
+                    case elf::RelocType::R_X86_64_32S : {
+                        uint32_t* l = (uint32_t*) loc;
+                        elf::SymbolTableEntry symTE = symtab[rela->sym];
+                        if (symTE.type == elf::SymbolType::STT_SECTION) {
+                            // has it been loaded?
+                            uint64_t sIdx = symTE.sectionIndex;
+                            if (!sectLocations.hasKey(sIdx)) panic("Did not load sect");
+                            LoadedSectInfo& lsi = sectLocations.get(sIdx);
+                            *l = ((uint64_t)lsi.loc) + rela->addend;
+                        } else {
+                            char* name = (char*)strtab + symTE.nameOffset;
+                            String s(name);
 
+                            void* sym = resolve_sym(s);
+                            if (!sym) {
+                                logs::info << "Spine loading could not find symbol: " << name << '\n';
+                                valid = false;
+                            }
+                            // TODO: switch t for actual function called
+                            *l = ((uint64_t)sym) + rela->addend;
+                        }
+                        break;
                     }
                     default : {
+                        panic("Unknown relocation")
                         break;
-                        // panic("Unknown relocation")
                     }
                 }
                 rela = (elf::Rela*)(((uint64_t)rela) + shdr->entrySize);

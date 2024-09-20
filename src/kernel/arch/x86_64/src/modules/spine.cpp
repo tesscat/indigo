@@ -68,7 +68,8 @@ void initSpine() {
                     char* name = strTab + ste->nameOffset;
                     // and add it!
                     String s(name);
-                    spine.set(s, (void*)ste->value);
+                    void* symbolVal = (void*)ste->value;
+                    spine.set(s, symbolVal);
                     // spineSet(name, (void*)ste->value);
                 }
             }

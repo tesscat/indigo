@@ -28,6 +28,8 @@ String::String(const char* a) {
         base = (char*)kmalloc(len+1);
         memcpy(base, a, len);
         base[len] = '\0';
+    } else {
+        base = nullptr;
     }
 }
 
@@ -37,6 +39,11 @@ String::~String() {
 
 // Copy ctor
 String::String(const String& other) {
+    if (other.len == 0) {
+        base = nullptr;
+        len = 0;
+        return;
+    }
     base = (char*)kmalloc(other.len + 1);
     memcpy(base, other.base, other.len);
     base[other.len] = '\0';
