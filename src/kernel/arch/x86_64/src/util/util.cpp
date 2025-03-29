@@ -10,4 +10,6 @@ namespace util {
     logs::info << "\nPANIC! at " << file << ":" << line << " (`" << func << "`): " << msg << '\n';
     loop_forever;
 }
+
+template class Vec<char>;
 }

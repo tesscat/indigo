@@ -5,6 +5,7 @@ SECTIONS
     /* link the very low stuff */
     . = 0x8000;
     .low_text ALIGN (4K) : {
+        *(.low_text.start)
         *(.low_text)
     }
 

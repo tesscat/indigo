@@ -45,6 +45,7 @@ void Logger::flush() {
     currBuff()->ApproxTrim();
     graphics::psf::consoleLock.release();
 }
+
 void Logger::init() {
     if (hasInit) return;
     hasInit = true;

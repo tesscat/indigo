@@ -20,6 +20,7 @@
 #include <memory/heap.hpp>
 #include <multi/start_others.hpp>
 #include <apic/ioapic.hpp>
+#include <initrd/initrd.hpp>
 #include <modules/spine.hpp>
 
 KernelArgs* kargs;
@@ -80,6 +81,7 @@ extern "C" void kernel_start(KernelArgs* args) {
     kernel_initialize(args);
 
     multi::submitSMP();
+    initrd::submitInitrd();
 
     // Load the first module
     

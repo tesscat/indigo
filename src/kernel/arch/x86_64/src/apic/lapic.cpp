@@ -50,9 +50,11 @@ helper_uint32(timerDivideConfiguration, 0x3E0)
 }
 
 __attribute__ ((interrupt)) void spurious(apic::InterruptFrame* frame) {
+    UNUSED(frame);
     loop_forever;
 }
 __attribute__ ((interrupt)) void timer(apic::InterruptFrame* frame) {
+    UNUSED(frame);
     // serve EOI
     *lapic::eoi = 0;
     return;

@@ -32,7 +32,15 @@ void initIOApic() {
     irqCount = (ioapic->ioRegValue >> 16) & 0xff;
     // mark all interrupts as disabled
     RedirectionEntry entry {
+        .vector=0,
+        .deliveryMode=0,
+        .destinationMode=0,
+        .deliveryStatus=0,
+        .remoteIRR=0,
+        .triggerMode=0,
+        // important line
         .mask=1,
+        .destination=0,
     };
     for (int i = 0; i < irqCount; i++) {
         setRedirectionEntry(i, entry);

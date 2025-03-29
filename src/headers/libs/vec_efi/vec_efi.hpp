@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 #define _STDINT_H
+#include <uefi.h>
 
 namespace indigo {
 template <typename T>

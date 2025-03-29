@@ -27,7 +27,7 @@ struct RedirectionEntry {
     uint8_t triggerMode : 1;
     // i can temporarily mask the irq
     uint8_t mask : 1;
-    uint64_t padding : 39;
+    uint64_t padding : 39 = 0;
     uint8_t destination : 8;
 } __attribute__ ((packed));
 

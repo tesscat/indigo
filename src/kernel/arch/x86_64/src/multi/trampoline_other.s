@@ -6,7 +6,7 @@ default rel
 extern LongMode
 [BITS 16]
 .code16
-section .low_text
+section .low_text.start
 global trampoline_start
 trampoline_start:
     cli
@@ -18,10 +18,12 @@ trampoline_start:
 %define PAGE_PRESENT    (1 << 0)
 %define PAGE_WRITE      (1 << 1)
 %define CODE_SEG     0x0008
+section .low_text
 ALIGN 4
 IDT:
     .Length       dw 0
     .Base         dd 0
+global SwitchToLongMode
 SwitchToLongMode:
     ; Disable IRQs
     mov al, 0xFF                      ; Out 0xFF to 0xA1 and 0x21 to disable all IRQs.

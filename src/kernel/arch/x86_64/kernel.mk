@@ -21,6 +21,7 @@ KERNEL_DEPS := $(OUT_DIR)/libstd.a $(OUT_DIR)/libmem.a
 KERNEL_OBJS := $(KERNEL_SILVER_OBJ) $(KERNEL_AS_OBJ) $(KERNEL_CPP_OBJ) $(BUILD_DIR)/$(KERNEL_NAME)/arch/$(ARCH)/font.o $(KERNEL_DEPS)
 
 .PHONY: project run listobjs
+.PRECIOUS: %.psfu
 
 listobjs:
 	echo $(KERNEL_OBJS)
@@ -55,9 +56,11 @@ $(BUILD_DIR)/$(KERNEL_NAME)/%.psfu: $(SRC_DIR)/$(KERNEL_NAME)/%.psfu.gz
 
 $(BUILD_DIR)/$(KERNEL_NAME)/%/font.o: $(BUILD_DIR)/$(KERNEL_NAME)/%/font.psfu
 	mkdir -p $(shell dirname $@)
-	$(let prevdir, $(shell pwd), \
-        mkdir -p $(shell dirname $@); \
-		cd $(shell dirname $@); \
-		objcopy -O elf64-x86-64 -B i386 -I binary font.psfu font.o; \
-		cd $(prevdir); \
-	)
+	cd $(shell dirname $@); objcopy -O elf64-x86-64 -B i386 -I binary font.psfu font.o
+	# objcopy -O elf64-x86-64 -B i386 -I binary --localize-symbols $< --prefix-symbols "aa" $< $@
+	# $(let prevdir, $(shell pwd), \
+        # mkdir -p $(shell dirname $@); \
+		# cd $(shell dirname $@); \
+		# objcopy -O elf64-x86-64 -B i386 -I binary font.psfu font.o
+		# cd $(prevdir); \
+	# )

@@ -13,7 +13,7 @@ class SlabAllocator {
     uint64_t bitmapsCount;
 public:
     SlabAllocator() {}
-    SlabAllocator(T* memory, uint64_t elements_) : elements{elements_}, values {memory} {
+    SlabAllocator(T* memory, uint64_t elements_) : values {memory}, elements{elements_} {
         // we need to put the bitmaps into space <size> too
         // we assume that someone else has done the math, and it all fits in
         // put bitmaps high up in case T requires alignment

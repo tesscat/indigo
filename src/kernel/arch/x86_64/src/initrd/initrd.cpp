@@ -23,6 +23,7 @@ int initrd() {
 void submitInitrd() {
     inator::Target t;
     t.name = String("initrd");
+    t.provides.Append(String("initrd"));
     t.preference = 1;
     t.load = initrd;
 

@@ -27,15 +27,15 @@ Module::Module(uint8_t* loaded_elf) {
     // TODO: do checks
     const elf::ElfHeader* hdr = (elf::ElfHeader*) loaded_elf;
 
-    elf::SymbolTableEntry* symtab;
-    uint64_t symtab_length;
+    // elf::SymbolTableEntry* symtab;
+    // uint64_t symtab_length;
     uint8_t* strtab;
     // Find the symbol table and strtab {{{
     for (uint64_t i = 0; i < hdr->sectHeaderTableLength; i++) {
         elf::SectHeader* shdr = (elf::SectHeader*)(loaded_elf + hdr->sectHeaderPos + hdr->sectEntrySize * i);
         if (shdr->type == elf::SectHeaderType::SHT_SYMTAB) {
-            symtab = (elf::SymbolTableEntry*)(loaded_elf + shdr->fileOffset);
-            symtab_length = shdr->fileSize / shdr->entrySize;
+            // symtab = (elf::SymbolTableEntry*)(loaded_elf + shdr->fileOffset);
+            // symtab_length = shdr->fileSize / shdr->entrySize;
         }
         if (shdr->type == elf::SectHeaderType::SHT_STRTAB) {
             strtab = loaded_elf + shdr->fileOffset;

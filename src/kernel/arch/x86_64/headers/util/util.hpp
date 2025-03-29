@@ -10,6 +10,7 @@ namespace util {
 #define KiB (1024)
 
 #define loop_forever {__asm__ __volatile__ ("hlt"); while(1);}
+#define UNUSED(x) ((void)(x))
 
 #define __COMPTIME_STRINGIFY(X) __COMPTIME_STRINGIFY2(X)
 #define __COMPTIME_STRINGIFY2(X) #X

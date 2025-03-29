@@ -33,9 +33,11 @@ This project has a large number of build dependencies, most of which I cannot re
 - NASM
 - lldb (if debugging)
 - qemu (for running in a VM)
-- mkgpt
+- [mkgpt](https://github.com/jncronin/mkgpt)
 - the edk2-ovmf QEMU firmware (I have no idea how I installed this one, try looking [here](https://github.com/tianocore/tianocore.github.io/wiki/OVMF))
 - A suitable PC Screen Font file symlinked to `src/kernel/arch/x86_64/font.psfu.gz`, which might be set up already but I'm not sure.
+- mksquashfs (`apt install squashfs-tools`)
+- mformat (`apt install mtools`)
 #### Running
 This project is by no means guaranteed to work on your machine.
 It also probably wants a Linux environment, I have no idea if this works under cygwin/WSL.

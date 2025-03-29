@@ -1,5 +1,6 @@
 #include "memory/heap.hpp"
 #include <memory/file.hpp>
+#include <util/util.hpp>
 
 namespace memory {
 uint8_t* MemoryReader::read(uint64_t offs, uint64_t len) {
@@ -17,7 +18,7 @@ MemoryReader::MemoryReader(uint8_t* _addr, uint64_t __size) : addr{_addr}, _size
 
 
 MemoryWriter::~MemoryWriter() {}
-MemoryWriter::MemoryWriter(uint8_t* _addr, uint64_t _size) : addr{_addr}, size{_size} {}
+MemoryWriter::MemoryWriter(uint8_t* _addr, uint64_t _size) /*: addr{_addr}, size{_size} */ {UNUSED(_addr); UNUSED(_size);}
 
 
 MemoryFile::MemoryFile(uint8_t* _addr, uint64_t __size, bool __readable, bool __writeable) : 

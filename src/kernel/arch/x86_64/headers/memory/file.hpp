@@ -16,8 +16,8 @@ public:
 };
 
 class MemoryWriter : public interfaces::Writer {
-    uint8_t* addr;
-    uint64_t size;
+    // uint8_t* addr;
+    // uint64_t size;
 public:
     virtual ~MemoryWriter() override;
 

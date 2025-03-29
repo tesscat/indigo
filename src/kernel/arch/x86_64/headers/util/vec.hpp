@@ -47,7 +47,7 @@ Vec<T>::Vec(const Vec& other) {
     len = other.len;
     if (allocated != 0) {
         data = (T*)kmalloc(allocated * sizeof(T));
-        for (int i = 0; i < len; i++) {
+        for (uint64_t i = 0; i < len; i++) {
             new (&data[i]) T((const T)other.data[i]);
         }
     }
@@ -95,10 +95,10 @@ void Vec<T>::ApproxTrim() {
 template <typename T>
 Vec<T>::~Vec() {
     // TODO: if data has destructor call it
-    for (int i = 0; i < len; i++) (&data[i])->~T();
+    for (uint64_t i = 0; i < len; i++) (&data[i])->~T();
     if (!takeMyData && data)
         kfree(data);
-    data == nullptr;
+    data = nullptr;
     len = 0;
 }
 template <typename T>

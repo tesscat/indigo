@@ -30,11 +30,11 @@ posix_efi:
 
 $(BUILD_DIR)/%.efi.o: $(SRC_DIR)/%.efi.cpp
 	mkdir -p $(shell dirname $@)
-	clang++ $(EFI_CPP_FLAGS) -c $< -o $@
+	$(CPPC) $(EFI_CPP_FLAGS) -c $< -o $@
 
 $(BUILD_DIR)/%.efi.o: $(SRC_DIR)/%.efi.c
 	mkdir -p $(shell dirname $@)
-	clang $(EFI_C_FLAGS) -c $< -o $@
+	$(CPPC) $(EFI_C_FLAGS) -c $< -o $@
 
 $(BUILD_DIR)/$(LOADER_NAME).efi: $(LOADER_OBJ)
 	mkdir -p $(shell dirname $@)
@@ -68,7 +68,7 @@ $(OUT_DIR)/$(PROJECT).bin: $(BUILD_DIR)/$(PROJECT).bin
 	mv $< $@
 
 
-QEMU_ARGS := -m 16G -bios /usr/share/edk2-ovmf/x64/OVMF.fd -net none -monitor stdio -d int,guest_errors -no-reboot -no-shutdown -smp 8
+QEMU_ARGS := -m 16G -bios scratch/OVMF.fd -net none -monitor stdio -d int,guest_errors -no-reboot -no-shutdown -smp 8
 
 # Run (verbose debug)
 run_dbg: $(OUT_DIR)/$(PROJECT).bin
