@@ -4,15 +4,15 @@
 #include "multi/cpu.hpp"
 #include "sync/spinlock.hpp"
 #include "util/util.hpp"
-#include <multi/start_others.hpp>
 #include <apic/idt.hpp>
+#include <multi/start_others.hpp>
 
 namespace multi {
-extern sync::Spinlock startupLock;
+    extern sync::Spinlock startupLock;
 }
 
 extern "C" void entry_other() {
-    __asm__ volatile ("cli");
+    __asm__ volatile("cli");
 
     // early init code
     // load proper GDT

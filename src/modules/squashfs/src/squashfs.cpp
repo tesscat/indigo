@@ -20,8 +20,9 @@ interfaces::FileSystem* constructSquashfs(interfaces::File* source) {
 extern "C" void module_load() {
     logs::info << "hello from module_load squashfs\n";
     // panic("uh");
-    interfaces::FileSystemProvider fsp {.check = checkForValidSquashfs, .construct = constructSquashfs};
+    interfaces::FileSystemProvider fsp{
+        .check     = checkForValidSquashfs,
+        .construct = constructSquashfs
+    };
     providers::fileSystems.Append(fsp);
 }
-
-

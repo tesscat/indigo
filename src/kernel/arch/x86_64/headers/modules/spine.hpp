@@ -6,12 +6,12 @@
 #include <stdint.h>
 
 namespace modules {
-// bool spineContains(const char* name);
-// void* spineGet(const char* name);
-// void spineSet(const char* name, void* fn, uint64_t);
+    // bool spineContains(const char* name);
+    // void* spineGet(const char* name);
+    // void spineSet(const char* name, void* fn, uint64_t);
 
-void initSpine();
-extern util::Map<String, void*> spine;
+    void initSpine();
+    extern util::Map<String, void*> spine;
 }
 
 #endif // !KERNEL_MODULES_SPINE_HPP

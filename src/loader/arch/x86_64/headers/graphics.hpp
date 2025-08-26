@@ -9,9 +9,9 @@ enum PixelFormat {
 
 struct FramebufferDescriptor {
     unsigned int* framebuffer = nullptr;
-    unsigned int width = 0;
-    unsigned int height = 0;
-    unsigned int pitch = 0;
+    unsigned int width        = 0;
+    unsigned int height       = 0;
+    unsigned int pitch        = 0;
     PixelFormat format;
 };
 

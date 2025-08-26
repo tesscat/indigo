@@ -1,3 +1,3 @@
 namespace initrd {
-void submitInitrd();
+    void submitInitrd();
 }

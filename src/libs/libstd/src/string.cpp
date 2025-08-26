@@ -1,8 +1,8 @@
 #include "libstd/string.hpp"
 #include "libmem/string.hpp"
 #include "memory/heap.hpp"
-#include <libmem/mem.hpp>
 #include <io/iostream.hpp>
+#include <libmem/mem.hpp>
 
 bool String::operator==(String& other) {
     for (uint64_t i = 0; i < len && i < other.len; i++) {
@@ -25,7 +25,7 @@ char String::operator[](int n) {
 String::String(const char* a) {
     len = libmem::strlen(a);
     if (len != 0) {
-        base = (char*)kmalloc(len+1);
+        base = (char*)kmalloc(len + 1);
         memcpy(base, a, len);
         base[len] = '\0';
     } else {
@@ -41,20 +41,20 @@ String::~String() {
 String::String(const String& other) {
     if (other.len == 0) {
         base = nullptr;
-        len = 0;
+        len  = 0;
         return;
     }
     base = (char*)kmalloc(other.len + 1);
     memcpy(base, other.base, other.len);
     base[other.len] = '\0';
-    len = other.len;
+    len             = other.len;
 }
 // Move ctor
 String::String(String&& other) {
-    base = other.base;
+    base       = other.base;
     other.base = nullptr;
-    len = other.len;
-    other.len = 0;
+    len        = other.len;
+    other.len  = 0;
 }
 
 // copy
@@ -62,17 +62,17 @@ void String::operator=(const String& other) {
     base = (char*)kmalloc(other.len + 1);
     memcpy(base, other.base, other.len);
     base[other.len] = '\0';
-    len = other.len;
+    len             = other.len;
 }
 // move
 void String::operator=(String&& other) {
-    base = other.base;
+    base       = other.base;
     other.base = nullptr;
-    len = other.len;
-    other.len = 0;
+    len        = other.len;
+    other.len  = 0;
 }
 
 String::String() {
-    len = 0;
+    len  = 0;
     base = nullptr;
 }

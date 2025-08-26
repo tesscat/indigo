@@ -6,19 +6,19 @@
 
 namespace multi {
 
-struct CPU {
-    uint32_t apicId;
-    uint32_t acpiId;
-};
+    struct CPU {
+        uint32_t apicId;
+        uint32_t acpiId;
+    };
 
-extern uint64_t nCpus;
-extern CPU* cpus;
+    extern uint64_t nCpus;
+    extern CPU* cpus;
 
-inline uint64_t getCpuIdx() {
-    uint32_t retlo, rethi = 0;
-    util::cpuGetMSR(MSR_FSBASE, &retlo, &rethi);
-    return (((uint64_t)rethi) << 32) | retlo;
-}
+    inline uint64_t getCpuIdx() {
+        uint32_t retlo, rethi = 0;
+        util::cpuGetMSR(MSR_FSBASE, &retlo, &rethi);
+        return (((uint64_t)rethi) << 32) | retlo;
+    }
 
 }
 

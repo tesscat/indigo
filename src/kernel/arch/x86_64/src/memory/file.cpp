@@ -3,44 +3,60 @@
 #include <util/util.hpp>
 
 namespace memory {
-uint8_t* MemoryReader::read(uint64_t offs, uint64_t len) {
-    // TODO: throw here
-    if (len+offs > _size) return nullptr;
-    uint8_t* res = (uint8_t*)kmalloc(len);
-    memcpy(res, addr+offs, len);
-    return res;
-}
-uint64_t MemoryReader::size() {
-    return _size;
-}
-MemoryReader::~MemoryReader() {}
-MemoryReader::MemoryReader(uint8_t* _addr, uint64_t __size) : addr{_addr}, _size{__size} {}
+    uint8_t* MemoryReader::read(uint64_t offs, uint64_t len) {
+        // TODO: throw here
+        if (len + offs > _size) return nullptr;
+        uint8_t* res = (uint8_t*)kmalloc(len);
+        memcpy(res, addr + offs, len);
+        return res;
+    }
+    uint64_t MemoryReader::size() {
+        return _size;
+    }
+    MemoryReader::~MemoryReader() {}
+    MemoryReader::MemoryReader(uint8_t* _addr, uint64_t __size)
+        : addr{_addr}, _size{__size} {}
 
+    MemoryWriter::~MemoryWriter() {}
+    MemoryWriter::MemoryWriter(
+        uint8_t* _addr,
+        uint64_t _size
+    ) /*: addr{_addr}, size{_size} */ {
+        UNUSED(_addr);
+        UNUSED(_size);
+    }
 
-MemoryWriter::~MemoryWriter() {}
-MemoryWriter::MemoryWriter(uint8_t* _addr, uint64_t _size) /*: addr{_addr}, size{_size} */ {UNUSED(_addr); UNUSED(_size);}
+    MemoryFile::MemoryFile(
+        uint8_t* _addr,
+        uint64_t __size,
+        bool __readable,
+        bool __writeable
+    )
+        : addr{_addr}, _size{__size}, _readable{__readable},
+          _writeable{__writeable} {}
 
+    uint64_t MemoryFile::size() {
+        return _size;
+    }
 
-MemoryFile::MemoryFile(uint8_t* _addr, uint64_t __size, bool __readable, bool __writeable) : 
-    addr{_addr}, _size{__size}, _readable{__readable}, _writeable{__writeable} {}
+    bool MemoryFile::readable() {
+        return _readable;
+    }
+    bool MemoryFile::writeable() {
+        return _writeable;
+    }
 
-uint64_t MemoryFile::size() {return _size;}
+    MemoryReader* MemoryFile::getReader() {
+        if (_readable) return new MemoryReader(addr, _size);
+        return nullptr;
+    }
 
-bool MemoryFile::readable() {return _readable;}
-bool MemoryFile::writeable() {return _writeable;}
+    MemoryWriter* MemoryFile::getWriter() {
+        if (_writeable) return new MemoryWriter(addr, _size);
+        return nullptr;
+    }
 
-MemoryReader* MemoryFile::getReader() {
-    if (_readable) return new MemoryReader(addr, _size);
-    return nullptr;
-}
-
-
-MemoryWriter* MemoryFile::getWriter() {
-    if (_writeable) return new MemoryWriter(addr, _size);
-    return nullptr;
-}
-
-// TODO: ownership semantics
-MemoryFile::~MemoryFile() {}
+    // TODO: ownership semantics
+    MemoryFile::~MemoryFile() {}
 
 }

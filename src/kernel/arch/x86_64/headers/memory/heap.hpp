@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 namespace memory {
-void initHeap();
+    void initHeap();
 }
 
 void* kmalloc(const uint64_t size);

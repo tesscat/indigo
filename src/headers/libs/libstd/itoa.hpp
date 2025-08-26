@@ -3,6 +3,6 @@
 
 #include <stdint.h>
 
-int itoa(int64_t value, char *sp, int radix=10);
+int itoa(int64_t value, char* sp, int radix = 10);
 
 #endif // !LIBS_LIBSTD_ITOA_HPP

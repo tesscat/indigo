@@ -14,7 +14,10 @@ uint64_t getMemmapSize() {
 MemMapInfo getMemmap(uint8_t* output) {
     uint64_t size = getMemmapSize();
     uint64_t descriptorSize;
-    BS->GetMemoryMap(&size, (efi_memory_descriptor_t*)output, nullptr, &descriptorSize, nullptr);
+    BS->GetMemoryMap(
+        &size, (efi_memory_descriptor_t*)output, nullptr, &descriptorSize,
+        nullptr
+    );
     printf("s%i", size);
-    return MemMapInfo { .fullSize = size, .descriptorSize = descriptorSize};
+    return MemMapInfo{.fullSize = size, .descriptorSize = descriptorSize};
 }

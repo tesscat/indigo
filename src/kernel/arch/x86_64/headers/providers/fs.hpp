@@ -4,10 +4,10 @@
 #include "interfaces/native/fs.hpp"
 #include "util/vec.hpp"
 namespace providers {
-extern util::Vec<interfaces::FileSystemProvider> fileSystems;
+    extern util::Vec<interfaces::FileSystemProvider> fileSystems;
 
-// TODO: make this throw instead of nullptring
-interfaces::FileSystem* tryMount(interfaces::File* file);
+    // TODO: make this throw instead of nullptring
+    interfaces::FileSystem* tryMount(interfaces::File* file);
 }
 
 #endif // !KERNEL_PROVIDERS_FS_HPP

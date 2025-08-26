@@ -3,14 +3,14 @@
 
 #include <ion_efi/ion_efi.hpp>
 namespace ion {
-/**
- * @brief Skips any whitespace characters at the start of a string
- *
- * @param input the string to start from, which has ->pos changed
- */
-void skipWhitespace(Input input);
-char* takeName(Input input);
-Node* parseValue(Input input);
+    /**
+     * @brief Skips any whitespace characters at the start of a string
+     *
+     * @param input the string to start from, which has ->pos changed
+     */
+    void skipWhitespace(Input input);
+    char* takeName(Input input);
+    Node* parseValue(Input input);
 }
 
 #endif // !LIBS_IONEFI_PARSE_HPP

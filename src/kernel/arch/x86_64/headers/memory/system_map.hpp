@@ -6,20 +6,17 @@
 #include <stdint.h>
 
 namespace memory {
-enum SysMemTypes {
-    Free,
-    Kernel
-};
-struct SystemMemMapEntry {
-    SysMemTypes type;
-    uint64_t start;
-    size_t len;
-};
+    enum SysMemTypes { Free, Kernel };
+    struct SystemMemMapEntry {
+        SysMemTypes type;
+        uint64_t start;
+        size_t len;
+    };
 
-extern SystemMemMapEntry memMap[0x400];
-extern uint64_t memMapLen;
+    extern SystemMemMapEntry memMap[0x400];
+    extern uint64_t memMapLen;
 
-void initSystemMap(MemoryDescriptor* mDescs, size_t mDescsCount);
+    void initSystemMap(MemoryDescriptor* mDescs, size_t mDescsCount);
 }
 
 #endif // !KERNEL_MEMORY_SYSTEM_MAP_HPP

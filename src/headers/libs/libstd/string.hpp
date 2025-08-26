@@ -5,6 +5,7 @@
 
 class String {
     char* base;
+
 public:
     uint64_t len = 0;
     String();
