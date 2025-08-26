@@ -20,6 +20,8 @@ namespace initrd {
         );
         interfaces::FileSystem* initrdFs = providers::tryMount(initrdFile);
 
+        UNUSED(initrdFs);
+
         return 0;
     }
 

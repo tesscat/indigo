@@ -211,7 +211,7 @@ void Kernel::Run(size_t argc, char** argv) {
     args->argc = argc;
     // copy over the char*s
     memcpy(end, argv, sizeof(char*) * argc);
-    char* currentStr = (char*)(end + sizeof(char*) * argc);
+    char* currentStr = (char*)(end + (sizeof(char*) * argc));
     for (size_t i = 0; i < argc; i++) {
         // TODO: maybe deduplicate the strlen calls
         size_t len = strlen(argv[i]);

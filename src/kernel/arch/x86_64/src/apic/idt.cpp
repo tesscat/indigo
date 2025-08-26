@@ -17,9 +17,9 @@ namespace apic {
         __asm__ volatile("lidt %0" : : "m"(desc));
     }
 
-    void registerExceptionHandler(
+    void registerCatchHandlerLogic(
         uint64_t idx,
-        void (*func)(InterruptFrame*, uint64_t),
+        void* func,
         bool isTrap,
         uint8_t dpl
     ) {
@@ -31,6 +31,24 @@ namespace apic {
         idt[idx].segsel.setIndex(0x08); // kernel selector
         idt[idx].segsel.useLDT             = 0;
         idt[idx].segsel.requestedPrivLevel = 0;
+    }
+
+    void registerExceptionHandler(
+        uint64_t idx,
+        void (*func)(InterruptFrame*, uint64_t),
+        bool isTrap,
+        uint8_t dpl
+    ) {
+        registerCatchHandlerLogic(idx, (void*)func, isTrap, dpl);
+    }
+
+    void registerInterruptHandler(
+        uint64_t idx,
+        void (*func)(InterruptFrame*),
+        bool isTrap,
+        uint8_t dpl
+    ) {
+        registerCatchHandlerLogic(idx, (void*)func, isTrap, dpl);
     }
 
 }

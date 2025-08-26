@@ -55,17 +55,12 @@ namespace apic {
         bool isTrap,
         uint8_t dpl = 0
     );
-    inline void registerInterruptHandler(
+    void registerInterruptHandler(
         uint64_t idx,
         void (*func)(InterruptFrame*),
         bool isTrap,
         uint8_t dpl = 0
-    ) {
-        registerExceptionHandler(
-            idx, reinterpret_cast<void (*)(InterruptFrame*, uint64_t)>(func),
-            isTrap, dpl
-        );
-    }
+    );
 
 }
 

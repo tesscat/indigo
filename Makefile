@@ -19,14 +19,14 @@ INC_FLAGS := -I$(SRC_DIR)/headers/libs
 PREFIX := $(ARCH)-elf
 
 LD := ld.lld
-CPPC := clang++ -std=c++20 -g -O0
+CPPC := clang++ -std=c++23 -g -O0
 
 NASM := nasm
 SILVERC := x
 SILVERC_2 := clang
 SILVERC_2_FLAGS := -ffreestanding -Wall -Wextra -fno-exceptions -fno-rtti
 
-BASE_FLAGS := $(INC_FLAGS) -ffreestanding -nostdlib -mno-red-zone -mno-sse -mno-sse2 -mno-mmx -mno-avx -fno-rtti -Wall -Wextra -fno-exceptions -D_STDINT_H=1
+BASE_FLAGS := $(INC_FLAGS) -ffreestanding -nostdlib -mno-red-zone -mno-sse -mno-sse2 -mno-mmx -mno-avx -fno-rtti -Wall -Wextra -Werror -fno-exceptions -D_STDINT_H=1
 AS_FLAGS := $(BASE_FLAGS)
 
 LD_FLAGS := -nostdlib --no-pie
