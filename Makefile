@@ -34,7 +34,7 @@ LD_FLAGS := -nostdlib --no-pie
 NASM_FLAGS := -felf64 -g
 
 clean:
-	rm -r $(OUT_DIR) $(BUILD_DIR) | true
+	rm -rf $(OUT_DIR) $(BUILD_DIR)
 
 COMPONENT_FILES := $(foreach component, $(COMPONENTS), $(SRC_DIR)/$(component)/arch/$(ARCH)/$(component).mk)
 

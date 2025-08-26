@@ -57,10 +57,10 @@ $(BUILD_DIR)/$(KERNEL_NAME)/%.psfu: $(SRC_DIR)/$(KERNEL_NAME)/%.psfu.gz
 $(BUILD_DIR)/$(KERNEL_NAME)/%/font.o: $(BUILD_DIR)/$(KERNEL_NAME)/%/font.psfu
 	mkdir -p $(shell dirname $@)
 	cd $(shell dirname $@); objcopy -O elf64-x86-64 -B i386 -I binary font.psfu font.o
-	# objcopy -O elf64-x86-64 -B i386 -I binary --localize-symbols $< --prefix-symbols "aa" $< $@
-	# $(let prevdir, $(shell pwd), \
-        # mkdir -p $(shell dirname $@); \
-		# cd $(shell dirname $@); \
-		# objcopy -O elf64-x86-64 -B i386 -I binary font.psfu font.o
-		# cd $(prevdir); \
-	# )
+# objcopy -O elf64-x86-64 -B i386 -I binary --localize-symbols $< --prefix-symbols "aa" $< $@
+# $(let prevdir, $(shell pwd), \
+# mkdir -p $(shell dirname $@); \
+# cd $(shell dirname $@); \
+# objcopy -O elf64-x86-64 -B i386 -I binary font.psfu font.o
+# cd $(prevdir); \
+# )
