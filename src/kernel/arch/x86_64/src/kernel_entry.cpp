@@ -2,6 +2,7 @@
 #include "apic/gdt.hpp"
 #include "apic/idt.hpp"
 #include "apic/pic.hpp"
+#include "debug/lldb.hpp"
 #include "inator/inator.hpp"
 #include "io/iostream.hpp"
 #include "libstd/merge_sort.hpp"
@@ -94,6 +95,8 @@ extern "C" void kernel_start(KernelArgs* args) {
         memory::kernelIdentityMap4KiBBlock((uint64_t)baseAddr);
         baseAddr += 4 * KiB;
     }
+
+    debug::setNextModuleLoadName("squashfs");
     modules::Module fsMod{kargs->fsDriver};
     fsMod.Load();
 

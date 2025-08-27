@@ -4,6 +4,8 @@
 #include "providers/fs.hpp"
 #include "util/util.hpp"
 
+const char* hii = "whoaaaa";
+
 bool checkForValidSquashfs(interfaces::File* source) {
     return true;
     if (!source->readable()) return false;
@@ -12,7 +14,7 @@ bool checkForValidSquashfs(interfaces::File* source) {
 
 interfaces::FileSystem* constructSquashfs(interfaces::File* source) {
     logs::info << "ctoring squashfs\n";
-    logs::info << "fs is " << source->size();
+    logs::info << "fs is " << source->size() << '\n';
     panic("um");
     return nullptr;
 }

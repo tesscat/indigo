@@ -1,0 +1,5 @@
+scripting run -l python -- import util.debug.module_hooks as module_hooks
+b debug::setNextModuleLoadName 
+b debug::loadedModuleSection
+breakpoint command add -F module_hooks.set_name_hook -s python 1
+breakpoint command add -F module_hooks.load_module_hook -s python 2

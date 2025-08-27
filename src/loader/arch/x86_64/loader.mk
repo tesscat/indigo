@@ -73,7 +73,7 @@ QEMU_ARGS := -m 16G -bios scratch/OVMF.fd -net none -monitor stdio -d int,guest_
 # Run (verbose debug)
 run_dbg: $(OUT_DIR)/$(PROJECT).bin
 	kitty qemu-system-$(ARCH) -s -S $(QEMU_ARGS) -drive file=$(shell pwd)/$^,format=raw &
-	lldb $(OUT_DIR)/kernel $(OUT_DIR)/trampoline $(OUT_DIR)/$(LOADER_NAME).efi -o 'gdb-remote localhost:1234'
+	lldb $(OUT_DIR)/kernel $(OUT_DIR)/trampoline $(OUT_DIR)/$(LOADER_NAME).efi -o 'gdb-remote localhost:1234' --source util/debug/lldb_cmds
 
 
 # Run (normal)

@@ -1,5 +1,5 @@
+#include "debug/lldb.hpp"
 #include "elf.hpp"
-#include "libmem/string.hpp"
 #include "logs/logs.hpp"
 #include "memory/heap.hpp"
 #include "sync/spinlock.hpp"
@@ -105,6 +105,9 @@ namespace modules {
                 // load it!
                 if (shdr->type != elf::SectHeaderType::SHT_NOBITS) {
                     memcpy(sect, loaded_elf + shdr->fileOffset, shdr->fileSize);
+                    debug::loadedModuleSection(shdr->fileOffset, sect);
+                    logs::info << "loaded from " << shdr->fileOffset << " to "
+                               << sect << "\n";
                 }
                 // add it to the map
                 LoadedSectInfo loadedSect{.size = shdr->fileSize, .loc = sect};
